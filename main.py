@@ -34,7 +34,10 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
 
 Base.metadata.create_all(bind=engine)
-import migrations; migrations.run()
+try:
+    import migrations; migrations.run()
+except Exception as _me:
+    import logging; logging.getLogger(__name__).error(f"Migrations failed (non-fatal): {_me}")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
