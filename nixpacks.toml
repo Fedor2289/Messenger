@@ -1,0 +1,11 @@
+# nixpacks.toml — Railway использует этот файл чтобы знать версию Python
+# Без него Railway может выбрать Python 3.8 → несовместимость с Pydantic v2
+
+[phases.setup]
+nixPkgs = ["python311", "gcc"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "uvicorn main:app --host 0.0.0.0 --port $PORT"
