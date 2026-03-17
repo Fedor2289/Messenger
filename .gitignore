@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+venv/
+.venv/
+env/
+
+# База данных (не коммитить!)
+*.db
+*.sqlite3
+
+# Переменные окружения (НИКОГДА не коммитить!)
+.env
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
