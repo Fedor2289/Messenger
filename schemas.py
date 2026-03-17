@@ -6,21 +6,19 @@ class RegisterRequest(BaseModel):
     username: str
     email: EmailStr
     password: str
-
     @field_validator("username")
     @classmethod
-    def val_username(cls, v):
-        v = v.strip()
-        if len(v) < 2: raise ValueError("Минимум 2 символа")
-        if len(v) > 32: raise ValueError("Максимум 32 символа")
-        allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+    def val_u(cls,v):
+        v=v.strip()
+        if len(v)<2: raise ValueError("Минимум 2 символа")
+        if len(v)>32: raise ValueError("Максимум 32 символа")
+        allowed=set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
         if not all(c in allowed for c in v): raise ValueError("Только буквы, цифры, _ и -")
         return v
-
     @field_validator("password")
     @classmethod
-    def val_password(cls, v):
-        if len(v) < 4: raise ValueError("Минимум 4 символа")
+    def val_p(cls,v):
+        if len(v)<4: raise ValueError("Минимум 4 символа")
         return v
 
 class LoginRequest(BaseModel):
@@ -31,95 +29,67 @@ class ProfileUpdate(BaseModel):
     display_name: Optional[str] = None
     bio: Optional[str] = None
     avatar_color: Optional[str] = None
-    avatar_img: Optional[str] = None  # base64 фото или "" для удаления
-
-    @field_validator("display_name")
-    @classmethod
-    def val_dn(cls, v):
-        if v is not None and len(v.strip()) > 64: raise ValueError("Максимум 64 символа")
-        return v.strip() if v else v
-
-    @field_validator("bio")
-    @classmethod
-    def val_bio(cls, v):
-        if v is not None and len(v) > 200: raise ValueError("Максимум 200 символов")
-        return v
-
-    @field_validator("avatar_color")
-    @classmethod
-    def val_color(cls, v):
-        if v and (len(v) != 7 or not v.startswith("#")):
-            raise ValueError("Формат #RRGGBB")
-        return v
+    avatar_img: Optional[str] = None
 
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    username: str
-    display_name: Optional[str]
-    bio: Optional[str]
-    avatar_img: Optional[str] = None
-    email: str
-    is_online: bool
-    avatar_color: str
-    created_at: datetime
+    id: int; username: str; display_name: Optional[str] = None
+    bio: Optional[str] = None; avatar_img: Optional[str] = None
+    email: str; is_online: bool; avatar_color: str; created_at: datetime
+    last_seen: Optional[datetime] = None
 
 class UserShort(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    username: str
-    display_name: Optional[str]
-    avatar_img: Optional[str] = None
-    is_online: bool
-    avatar_color: str
+    id: int; username: str; display_name: Optional[str] = None
+    avatar_img: Optional[str] = None; is_online: bool; avatar_color: str
+    last_seen: Optional[datetime] = None
 
 class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: UserOut
+    access_token: str; token_type: str = "bearer"; user: UserOut
 
 class ReactionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    emoji: str
-    user_id: int
+    emoji: str; user_id: int
+
+class ReplySnippet(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int; content: str; sender: Optional[UserShort] = None
+    msg_type: str = "text"
 
 class MessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    msg_type: str
-    content: str
-    media_data: Optional[str]
-    media_mime: Optional[str]
-    media_size: Optional[int]
-    sender_id: Optional[int]
-    room_id: int
-    created_at: datetime
-    is_read: bool
-    sender: Optional[UserShort]
-    reactions: List[ReactionOut] = []
+    id: int; msg_type: str; content: str
+    media_data: Optional[str] = None; media_mime: Optional[str] = None
+    media_size: Optional[int] = None; sender_id: Optional[int] = None
+    room_id: int; created_at: datetime; is_read: bool
+    is_deleted: bool = False; is_pinned: bool = False
+    edited_at: Optional[datetime] = None
+    reply_to: Optional[ReplySnippet] = None
+    sender: Optional[UserShort] = None; reactions: dict = {}
 
 class DirectRoomRequest(BaseModel):
     user_id: int
 
 class GroupRoomRequest(BaseModel):
-    name: str
-    member_ids: List[int]
-
+    name: str; member_ids: List[int]
     @field_validator("name")
     @classmethod
-    def val_name(cls, v):
-        v = v.strip()
-        if not v: raise ValueError("Название не может быть пустым")
-        if len(v) > 64: raise ValueError("Максимум 64 символа")
+    def val_n(cls,v):
+        v=v.strip()
+        if not v: raise ValueError("Название обязательно")
+        if len(v)>64: raise ValueError("Максимум 64 символа")
         return v
+
+class ChannelRequest(BaseModel):
+    name: str; description: Optional[str] = None
 
 class RoomOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    name: Optional[str]
-    is_group: bool
-    created_by: Optional[int]
-    created_at: datetime
-    members: List[UserShort]
-    last_message: Optional[MessageOut] = None
-    unread_count: int = 0
+    id: int; name: Optional[str] = None; room_type: str
+    description: Optional[str] = None; created_by: Optional[int] = None
+    created_at: datetime; members: List[UserShort] = []
+    last_message: Optional[MessageOut] = None; unread_count: int = 0
+    pinned_msg_id: Optional[int] = None
+
+class AIMessageRequest(BaseModel):
+    message: str; room_id: int
