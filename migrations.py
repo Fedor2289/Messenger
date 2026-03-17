@@ -98,7 +98,7 @@ def _create_tables():
 
 
 def _migrate_data():
-    """Конвертируем is_group → room_type для старых записей"""
+    """Конвертируем is_group → room_type и убираем NOT NULL с is_group"""
     raw_conn = engine.raw_connection()
     try:
         raw_conn.set_session(autocommit=True)
@@ -109,13 +109,18 @@ def _migrate_data():
                 WHERE table_name='rooms' AND column_name='is_group'
             """)
             if cur.fetchone():
+                # Снимаем NOT NULL ограничение и ставим DEFAULT FALSE
+                # чтобы новый код мог не передавать это поле
+                cur.execute("ALTER TABLE rooms ALTER COLUMN is_group SET DEFAULT FALSE")
+                cur.execute("ALTER TABLE rooms ALTER COLUMN is_group DROP NOT NULL")
+                # Обновляем room_type по старому is_group
                 cur.execute("""
                     UPDATE rooms SET room_type = CASE
                         WHEN is_group = TRUE THEN 'group'
                         ELSE 'chat'
                     END WHERE room_type = 'chat'
                 """)
-                logger.info("Migrated is_group → room_type")
+                logger.info("Migrated is_group → room_type, removed NOT NULL")
     except Exception as e:
         logger.warning(f"Data migration: {e}")
     finally:
