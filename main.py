@@ -33,13 +33,31 @@ app = FastAPI(title="Messenger", version="4.0.0", docs_url="/api/docs")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
 
-Base.metadata.create_all(bind=engine)
-try:
-    import migrations; migrations.run()
-except Exception as _me:
-    import logging; logging.getLogger(__name__).error(f"Migrations failed (non-fatal): {_me}")
+# НЕ вызываем create_all/migrations при импорте — делаем в startup хуке
+# чтобы uvicorn успел поднять HTTP до обращения к БД
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.on_event("startup")
+async def on_startup():
+    import asyncio, logging
+    _log = logging.getLogger(__name__)
+    # Создаём таблицы и мигрируем в фоне — не блокируем старт
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _do_startup)
+
+def _do_startup():
+    import logging
+    _log = logging.getLogger(__name__)
+    try:
+        Base.metadata.create_all(bind=engine)
+        _log.info("DB tables OK")
+    except Exception as e:
+        _log.error(f"create_all failed: {e}")
+    try:
+        import migrations; migrations.run()
+    except Exception as e:
+        _log.error(f"Migrations failed: {e}")
 
 # ── Rate limiter ─────────────────────────────────────────────
 class RL:
