@@ -374,27 +374,35 @@ async def push_unsubscribe(token:str=Query(...), endpoint:str=Query(...), db:Ses
 
 async def send_push_to_user(db, user_id:int, title:str, body:str, room_id:int=None, tag:str="msg"):
     if not VAPID_PRIVATE or not VAPID_PUBLIC:
+        logger.warning("Push: VAPID keys not set, skipping")
         return
     try:
         rows=db.execute(
             sql_text("SELECT subscription FROM push_subscriptions WHERE user_id=:uid"),
             {"uid":user_id}
         ).fetchall()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Push: DB error reading subscriptions: {e}")
+        return
+    if not rows:
         return
     payload=json.dumps({"title":title,"body":body,"room_id":room_id,"tag":tag})
+    # Нормализуем приватный ключ — vapidkeys.com даёт raw base64url, pywebpush хочет его же
+    priv_key = VAPID_PRIVATE.strip()
+    # Если это PEM — оставляем как есть, если raw base64url — тоже оставляем
     for row in rows:
         try:
             sub=json.loads(row[0])
             webpush(
                 subscription_info=sub,
                 data=payload,
-                vapid_private_key=VAPID_PRIVATE,
-                vapid_claims={"sub":VAPID_EMAIL}
+                vapid_private_key=priv_key,
+                vapid_claims={"sub": VAPID_EMAIL}
             )
+            logger.info(f"Push sent to user {user_id}: {title}")
         except WebPushException as e:
-            if "410" in str(e) or "404" in str(e):
-                # Подписка устарела — удаляем
+            logger.error(f"Push WebPushException user={user_id}: {e}, response={e.response.text if e.response else 'no response'}")
+            if e.response and e.response.status_code in (404, 410):
                 try:
                     db.execute(
                         sql_text("DELETE FROM push_subscriptions WHERE user_id=:uid AND subscription=:sub"),
@@ -404,7 +412,7 @@ async def send_push_to_user(db, user_id:int, title:str, body:str, room_id:int=No
                 except Exception:
                     pass
         except Exception as e:
-            logger.debug(f"Push send error: {e}")
+            logger.error(f"Push error user={user_id}: {type(e).__name__}: {e}")
 
 # ── Ringtone Upload ───────────────────────────────────────────
 @app.post("/api/upload/ringtone")
@@ -685,12 +693,12 @@ async def upload(rid:int, token:str=Query(...), file:UploadFile=File(...),
     m=load_msg(db,msg.id)
     ids=[mb.user_id for mb in db.query(models.RoomMember).filter_by(room_id=rid).all()]
     await manager.broadcast(ids,{"type":"new_message","message":msg_dict(m)})
-    # Push тем кто офлайн
+    # Push всем кроме отправителя (сервис-воркер сам решит показывать или нет)
     _sndr = m.get("sender") or {}; sender_name = _sndr.get("display_name") or _sndr.get("username") or "Кто-то"
-    body = m["content"][:80] if m.get("msg_type")=="text" else "📎 Медиафайл"
+    pbody = m["content"][:80] if m.get("msg_type")=="text" else "📎 Медиафайл"
     for uid in ids:
-        if not manager.is_online(uid):
-            await send_push_to_user(db, uid, sender_name, body, room_id=rid)
+        if uid != me.id:
+            await send_push_to_user(db, uid, sender_name, pbody, room_id=rid)
     return msg_dict(m)
 
 @app.get("/api/media/{msg_id}/url")
@@ -1130,7 +1138,7 @@ async def _on_msg(db,sender_id,d):
     sname=_sndr.get("display_name") or _sndr.get("username") or "Кто-то"
     pbody=content[:80] if mt=="text" else ("🎨 Стикер" if mt=="sticker" else "📎 Медиа")
     for uid in ids:
-        if uid!=sender_id and not manager.is_online(uid):
+        if uid!=sender_id:
             await send_push_to_user(db,uid,sname,pbody,room_id=room_id)
 
 async def _on_typing(db,uid,d):
@@ -1161,7 +1169,7 @@ async def _on_call(db,caller_id,d):
     payload={**d,"caller_id":caller_id}
     await manager.send(target_id,payload)
     # Push для входящего звонка если адресат офлайн
-    if t=="call_offer" and not manager.is_online(target_id):
+    if t=="call_offer":
         caller=db.get(models.User,caller_id)
         cname=(caller.display_name or caller.username) if caller else "Кто-то"
         ctype="видео" if d.get("call_type")=="video" else "голосовой"
