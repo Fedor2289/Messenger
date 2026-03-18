@@ -429,7 +429,7 @@ async def upload_ringtone(token:str=Query(...), file:UploadFile=File(...), db:Se
         target_room_id=room.id
     else:
         target_room_id=ai_room.room_id
-    msg=models.Message(msg_type="voice",content=fname,media_data=yadisk_uri,
+    msg=models.Message(msg_type="ringtone",content=fname,media_data=yadisk_uri,
                        media_mime=mime,media_size=len(raw),sender_id=me.id,
                        room_id=target_room_id,reply_to_id=None)
     db.add(msg); db.commit(); db.refresh(msg)
@@ -1124,6 +1124,14 @@ async def _on_msg(db,sender_id,d):
     m=load_msg(db,msg.id)
     ids=[m2.user_id for m2 in db.query(models.RoomMember).filter_by(room_id=room_id).all()]
     await manager.broadcast(ids,{"type":"new_message","message":msg_dict(m)})
+    # Push тем кто офлайн
+    md=msg_dict(m)
+    _sndr=md.get("sender") or {}
+    sname=_sndr.get("display_name") or _sndr.get("username") or "Кто-то"
+    pbody=content[:80] if mt=="text" else ("🎨 Стикер" if mt=="sticker" else "📎 Медиа")
+    for uid in ids:
+        if uid!=sender_id and not manager.is_online(uid):
+            await send_push_to_user(db,uid,sname,pbody,room_id=room_id)
 
 async def _on_typing(db,uid,d):
     rid=d.get("room_id"); u=db.get(models.User,uid)
