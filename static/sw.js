@@ -7,21 +7,29 @@ self.addEventListener('push', e => {
   let d;
   try { d = e.data.json(); } catch { d = { title: 'Messenger', body: e.data.text() }; }
 
-  const opts = {
-    body: d.body || '',
-    icon: d.icon || '/static/icon192.png',
-    badge: '/static/icon192.png',
-    tag: d.tag || 'msg',
-    data: { url: d.url || '/', room_id: d.room_id },
-    renotify: true,
-    vibrate: [200, 100, 200],
-  };
-  e.waitUntil(self.registration.showNotification(d.title || 'Messenger', opts));
+  // Если страница открыта и в фокусе — не показываем push (JS сам обработает)
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const focused = list.some(c => c.focused && c.visibilityState === 'visible');
+      if (focused) return; // окно активно — не дублируем уведомление
+
+      const opts = {
+        body: d.body || '',
+        icon: '/static/icon192.png',
+        badge: '/static/icon192.png',
+        tag: d.tag || 'msg',
+        data: { url: '/', room_id: d.room_id },
+        renotify: true,
+        vibrate: [200, 100, 200],
+        silent: false,
+      };
+      return self.registration.showNotification(d.title || 'Messenger', opts);
+    })
+  );
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || '/';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       for (const c of list) {
@@ -33,7 +41,7 @@ self.addEventListener('notificationclick', e => {
           return;
         }
       }
-      clients.openWindow(url);
+      return clients.openWindow('/');
     })
   );
 });
