@@ -113,21 +113,27 @@ async def yadisk_upload(raw: bytes, filename: str, mime: str) -> str:
                 params={"path": disk_path}
             )
             
-            # 4. Получаем public_key для скачивания
-            info = await c.get(
-                "https://cloud-api.yandex.net/v1/disk/resources",
-                headers=headers,
-                params={"path": disk_path}
-            )
-            if info.status_code != 200:
-                return ""
+            # 4. Получаем public_key для скачивания (retry — иногда не сразу появляется)
+            public_key = ""
+            for attempt in range(4):
+                info = await c.get(
+                    "https://cloud-api.yandex.net/v1/disk/resources",
+                    headers=headers,
+                    params={"path": disk_path}
+                )
+                if info.status_code != 200:
+                    break
+                data = info.json()
+                public_key = data.get("public_key", "")
+                if public_key:
+                    break
+                import asyncio
+                await asyncio.sleep(0.8)  # ждём пока Яндекс обработает публикацию
             
-            data = info.json()
-            public_key = data.get("public_key", "")
             if not public_key:
+                logger.error(f"YaDisk: public_key not available for {disk_path}")
                 return ""
             
-            # Возвращаем специальный URI — сервер будет проксировать скачивание
             return f"yadisk:{public_key}"
     except Exception as e:
         logger.error(f"YaDisk upload exception: {e}")
