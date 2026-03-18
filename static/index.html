@@ -1138,12 +1138,22 @@ function dn(u){return u.display_name||u.username;}
 
 function setAv(el,u){
   if(!el||!u) return;
-  if(u.avatar_img){el.style.backgroundImage=`url(${u.avatar_img})`;el.style.backgroundSize='cover';el.style.backgroundPosition='center';el.style.background='';el.textContent='';}
-  else{el.style.backgroundImage='';el.style.background=u.avatar_color||'#5288c1';el.textContent=ini(dn(u));}
+  if(u.avatar_img&&u.avatar_img.length>10){
+    el.style.backgroundImage=`url(${u.avatar_img})`;
+    el.style.backgroundSize='cover';
+    el.style.backgroundPosition='center';
+    el.style.background='';
+    el.textContent='';
+    el.innerHTML='';
+  } else{
+    el.style.backgroundImage='';
+    el.style.background=u.avatar_color||'#5288c1';
+    el.textContent=ini(dn(u));
+  }
 }
 function avHtml(u,sz='av32'){
   const dot=u.is_online?'<div class="dot"></div>':'';
-  if(u.avatar_img) return `<div class="av ${sz}" style="background-image:url(${u.avatar_img});background-size:cover;background-position:center">${dot}</div>`;
+  if(u.avatar_img&&u.avatar_img.length>10) return `<div class="av ${sz}" style="background-image:url(${u.avatar_img});background-size:cover;background-position:center">${dot}</div>`;
   return `<div class="av ${sz}" style="background:${u.avatar_color||'#5288c1'}">${ini(dn(u))}${dot}</div>`;
 }
 
@@ -1373,8 +1383,8 @@ function roomItem(r){
   } else{name=r.name||'Группа';color='#5288c1';online=false;img=null;}
   const dot=online?'<div class="dot"></div>':'';
   const aiAvContent='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="9" cy="16" r="1.5" fill="rgba(255,255,255,.85)" stroke="none"/><circle cx="15" cy="16" r="1.5" fill="rgba(255,255,255,.85)" stroke="none"/></svg>';
-  const avStyle=isAI?`background:${color}`:(roomImg?`background-image:url(${roomImg});background-size:cover;background-position:center`:(img?`background-image:url(${img});background-size:cover;background-position:center`:`background:${color}`));
-  const avTxt=isAI?aiAvContent:((roomImg||img)?'':ini(name));
+  const avStyle=isAI?`background:${color}`:(roomImg&&roomImg.length>10?`background-image:url(${roomImg});background-size:cover;background-position:center`:(img&&img.length>10?`background-image:url(${img});background-size:cover;background-position:center`:`background:${color}`));
+  const avTxt=isAI?aiAvContent:((roomImg&&roomImg.length>10||img&&img.length>10)?'':ini(name));
   const badge=r.unread_count>0?`<div class="badge">${r.unread_count>99?'99+':r.unread_count}</div>`:'';
   const last=r.last_message;
   let prev='Нет сообщений',prevIco='';
@@ -1577,7 +1587,7 @@ function buildMsgEl(msg,consec,isGrp){
   let avHTML='';
   if(!isOut){
     if(consec)avHTML='<div style="width:32px;flex-shrink:0"></div>';
-    else{const avStyle=s.avatar_img?`background-image:url(${s.avatar_img});background-size:cover;background-position:center`:`background:${s.avatar_color||'#5288c1'}`;
+    else{const avStyle=s.avatar_img&&s.avatar_img.length>10?`background-image:url(${s.avatar_img});background-size:cover;background-position:center`:`background:${s.avatar_color||'#5288c1'}`;
       const avTxt=s.avatar_img?'':ini(dn(s));
       avHTML=`<div class="av av32 mav" style="${avStyle};cursor:pointer" onclick="showUserProfile(${s.id})">${avTxt}</div>`;}
   }
@@ -2031,8 +2041,28 @@ function trigAv(){document.getElementById('av-fi').click();}
 function prevAv(input){
   if(!input.files.length) return;
   const file=input.files[0];
-  if(file.size>2*1024*1024){toast('Фото max 2 МБ','err');return;}
-  const r=new FileReader();r.onload=e=>{S._pendingAv=e.target.result;const av=document.getElementById('prof-av-el');av.style.backgroundImage=`url(${S._pendingAv})`;av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.textContent='';};r.readAsDataURL(file);
+  if(file.size>10*1024*1024){toast('Фото max 10 МБ','err');return;}
+  // Ресайз до 256x256 перед сохранением
+  const img=new Image();
+  const url=URL.createObjectURL(file);
+  img.onload=()=>{
+    URL.revokeObjectURL(url);
+    const canvas=document.createElement('canvas');
+    const MAX=256;
+    let w=img.width,h=img.height;
+    if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
+    else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+    canvas.width=w;canvas.height=h;
+    canvas.getContext('2d').drawImage(img,0,0,w,h);
+    const data=canvas.toDataURL('image/jpeg',0.85);
+    S._pendingAv=data;
+    const av=document.getElementById('prof-av-el');
+    av.style.backgroundImage=`url(${data})`;
+    av.style.backgroundSize='cover';
+    av.style.backgroundPosition='center';
+    av.textContent='';
+  };
+  img.src=url;
 }
 let _savingProfile=false;
 async function saveProfile(){
