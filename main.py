@@ -27,7 +27,7 @@ GROQ_API_KEY    = os.getenv("GROQ_API_KEY", "")
 CEREBRAS_KEY    = os.getenv("CEREBRAS_API_KEY", "")
 GIPHY_API_KEY   = os.getenv("GIPHY_API_KEY", "")
 AI_BACKEND      = os.getenv("AI_BACKEND", "auto")
-MAX_UPLOAD      = 15 * 1024 * 1024  # 15 МБ
+MAX_UPLOAD      = 200 * 1024 * 1024  # 200 МБ
 YADISK_TOKEN    = os.getenv("YADISK_TOKEN", "")
 YADISK_FOLDER   = os.getenv("YADISK_FOLDER", "messenger")
 
