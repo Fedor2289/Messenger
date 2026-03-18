@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # ── Env ──────────────────────────────────────────────────────
 GROQ_API_KEY    = os.getenv("GROQ_API_KEY", "")
 CEREBRAS_KEY    = os.getenv("CEREBRAS_API_KEY", "")
-TENOR_API_KEY   = os.getenv("TENOR_API_KEY", "AIzaSyDummyKey")
+GIPHY_API_KEY   = os.getenv("GIPHY_API_KEY", "")
 AI_BACKEND      = os.getenv("AI_BACKEND", "auto")
 MAX_UPLOAD      = 15 * 1024 * 1024  # 15 МБ
 
@@ -70,6 +70,12 @@ class RL:
         if len(self._l[uid])>=self.n: return False
         self._l[uid].append(now); return True
 rl=RL()
+
+
+ADMIN_USERNAMES = set(x.strip() for x in os.getenv("ADMIN_USERNAMES","admin").split(",") if x.strip())
+
+def is_admin_user(user: models.User) -> bool:
+    return user.username in ADMIN_USERNAMES
 
 # ── Helpers ───────────────────────────────────────────────────
 def auth(token, db):
@@ -328,13 +334,13 @@ async def del_msg(mid:int, token:str=Query(...), db:Session=Depends(get_db)):
     me=auth(token,db)
     msg=db.get(models.Message,mid)
     if not msg: raise HTTPException(404,"Не найдено")
+    room_id=msg.room_id
     if msg.sender_id!=me.id:
-        # Допустим удалять сообщение в своей комнате если ты admin
-        mb=db.query(models.RoomMember).filter_by(room_id=msg.room_id,user_id=me.id).first()
+        mb=db.query(models.RoomMember).filter_by(room_id=room_id,user_id=me.id).first()
         if not mb or not mb.is_admin: raise HTTPException(403,"Нельзя удалить чужое сообщение")
-    msg.is_deleted=True; msg.media_data=None; db.commit()
-    ids=[m.user_id for m in db.query(models.RoomMember).filter_by(room_id=msg.room_id).all()]
-    await manager.broadcast(ids,{"type":"msg_deleted","message_id":mid,"room_id":msg.room_id})
+    ids=[m.user_id for m in db.query(models.RoomMember).filter_by(room_id=room_id).all()]
+    db.delete(msg); db.commit()  # Хард-удаление — полностью из БД
+    await manager.broadcast(ids,{"type":"msg_deleted","message_id":mid,"room_id":room_id})
     return {"ok":True}
 
 @app.patch("/api/messages/{mid}")
@@ -409,23 +415,23 @@ async def react(mid:int, emoji:str=Query(...), token:str=Query(...), db:Session=
     await manager.broadcast(ids,{"type":"reaction_update","message_id":mid,"room_id":msg.room_id,"reactions":g})
     return g
 
-# GIF search (Tenor)
+# GIF search (Giphy — бесплатный ключ на developers.giphy.com)
 @app.get("/api/gif/search")
 async def gif_search(q:str=Query(...), token:str=Query(...), limit:int=Query(20), db:Session=Depends(get_db)):
     auth(token,db)
-    if not TENOR_API_KEY or TENOR_API_KEY=="AIzaSyDummyKey":
+    if not GIPHY_API_KEY:
         return {"results":[]}
     try:
         async with httpx.AsyncClient(timeout=5) as c:
-            r=await c.get("https://tenor.googleapis.com/v2/search",
-                          params={"q":q,"key":TENOR_API_KEY,"limit":limit,"media_filter":"gif"})
+            r=await c.get("https://api.giphy.com/v1/gifs/search",
+                          params={"q":q,"api_key":GIPHY_API_KEY,"limit":limit,"rating":"g","lang":"ru"})
             data=r.json()
         results=[{
             "id":item["id"],
-            "url":item["media_formats"]["gif"]["url"],
-            "preview":item["media_formats"]["tinygif"]["url"],
+            "url":item["images"]["original"]["url"],
+            "preview":item["images"]["fixed_width_small"]["url"],
             "title":item.get("title",""),
-        } for item in data.get("results",[])]
+        } for item in data.get("data",[])]
         return {"results":results}
     except Exception as e:
         logger.error(f"GIF search error: {e}"); return {"results":[]}
@@ -494,6 +500,51 @@ async def _call_ai(messages:list) -> str:
 
     return "⚠️ ИИ временно недоступен. Проверьте API ключ в переменных окружения Railway (GROQ_API_KEY или CEREBRAS_API_KEY)."
 
+
+@app.post("/api/rooms/{rid}/members/add")
+async def add_member(rid:int, user_id:int=Query(...), token:str=Query(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    room=db.get(models.Room,rid)
+    if not room or room.room_type not in ("group","channel"): raise HTTPException(400,"Не группа")
+    mb=db.query(models.RoomMember).filter_by(room_id=rid,user_id=me.id).first()
+    if not mb or not mb.is_admin: raise HTTPException(403,"Только админ")
+    if db.query(models.RoomMember).filter_by(room_id=rid,user_id=user_id).first():
+        raise HTTPException(400,"Уже в группе")
+    u=db.get(models.User,user_id)
+    if not u: raise HTTPException(404,"Пользователь не найден")
+    db.add(models.RoomMember(room_id=rid,user_id=user_id,is_admin=False))
+    db.commit()
+    await manager.send(user_id,{"type":"added_to_room","room":room_dict(room,user_id,db)})
+    return {"ok":True}
+
+@app.delete("/api/rooms/{rid}/members/{uid}")
+async def remove_member(rid:int, uid:int, token:str=Query(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    room=db.get(models.Room,rid)
+    if not room or room.room_type not in ("group","channel"): raise HTTPException(400,"Не группа")
+    # Можно уйти самому или убрать другого (если ты админ)
+    if uid!=me.id:
+        mb=db.query(models.RoomMember).filter_by(room_id=rid,user_id=me.id).first()
+        if not mb or not mb.is_admin: raise HTTPException(403,"Только админ")
+    target=db.query(models.RoomMember).filter_by(room_id=rid,user_id=uid).first()
+    if not target: raise HTTPException(404,"Не участник")
+    db.delete(target); db.commit()
+    await manager.send(uid,{"type":"removed_from_room","room_id":rid})
+    ids=[m.user_id for m in db.query(models.RoomMember).filter_by(room_id=rid).all()]
+    await manager.broadcast(ids,{"type":"member_removed","room_id":rid,"user_id":uid})
+    return {"ok":True}
+
+@app.patch("/api/rooms/{rid}/members/{uid}/admin")
+async def toggle_admin(rid:int, uid:int, token:str=Query(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    room=db.get(models.Room,rid)
+    if not room: raise HTTPException(404,"Не найдено")
+    if room.created_by!=me.id: raise HTTPException(403,"Только создатель")
+    mb=db.query(models.RoomMember).filter_by(room_id=rid,user_id=uid).first()
+    if not mb: raise HTTPException(404,"Не участник")
+    mb.is_admin=not mb.is_admin; db.commit()
+    return {"ok":True,"is_admin":mb.is_admin}
+
 # Create AI room for user
 @app.post("/api/rooms/ai")
 async def create_ai_room(token:str=Query(...), db:Session=Depends(get_db)):
@@ -518,6 +569,93 @@ async def pub_channels(token:str=Query(...), search:str=Query(""), db:Session=De
     rooms=q.order_by(models.Room.created_at.desc()).limit(30).all()
     return [{"id":r.id,"name":r.name,"description":getattr(r,"description",""),
              "members_count":len(r.members)} for r in rooms]
+
+# ── Admin endpoints ───────────────────────────────────────────
+
+@app.get("/api/admin/users")
+async def admin_users(token:str=Query(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    if not is_admin_user(me): raise HTTPException(403,"Нет прав")
+    users=db.query(models.User).order_by(models.User.created_at.desc()).all()
+    return [{"id":u.id,"username":u.username,"display_name":u.display_name,
+             "email":u.email,"is_online":manager.is_online(u.id),
+             "avatar_color":u.avatar_color,"created_at":u.created_at.isoformat()}
+            for u in users]
+
+@app.get("/api/admin/rooms")
+async def admin_rooms(token:str=Query(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    if not is_admin_user(me): raise HTTPException(403,"Нет прав")
+    rooms=db.query(models.Room).order_by(models.Room.created_at.desc()).limit(100).all()
+    return [{"id":r.id,"name":r.name,"room_type":getattr(r,"room_type","chat"),
+             "members_count":len(r.members),"created_at":r.created_at.isoformat()} for r in rooms]
+
+@app.post("/api/admin/message/{user_id}")
+async def admin_message(user_id:int, content:str=Query(...), token:str=Query(...), db:Session=Depends(get_db)):
+    """Админ пишет пользователю от лица системы/поддержки"""
+    me=auth(token,db)
+    if not is_admin_user(me): raise HTTPException(403,"Нет прав")
+    target=db.get(models.User,user_id)
+    if not target: raise HTTPException(404,"Пользователь не найден")
+    # Находим или создаём чат поддержки
+    support_room = _get_or_create_support_room(db, me.id, user_id)
+    msg=models.Message(msg_type="text",content=content,sender_id=me.id,room_id=support_room.id)
+    db.add(msg); db.commit()
+    m=load_msg(db,msg.id)
+    await manager.broadcast([me.id,user_id],{"type":"new_message","message":msg_dict(m)})
+    return {"ok":True}
+
+@app.delete("/api/admin/users/{uid}")
+async def admin_del_user(uid:int, token:str=Query(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    if not is_admin_user(me): raise HTTPException(403,"Нет прав")
+    if uid==me.id: raise HTTPException(400,"Нельзя удалить себя")
+    u=db.get(models.User,uid)
+    if not u: raise HTTPException(404,"Не найден")
+    db.delete(u); db.commit()
+    return {"ok":True}
+
+@app.post("/api/support")
+async def open_support(token:str=Query(...), db:Session=Depends(get_db)):
+    """Открыть чат с техподдержкой"""
+    me=auth(token,db)
+    # Находим первого пользователя-админа
+    admin=db.query(models.User).filter(
+        models.User.username.in_(list(ADMIN_USERNAMES))
+    ).first()
+    if not admin:
+        # Если нет никакого аккаунта "admin", возвращаем AI-чат
+        existing=db.query(models.RoomMember).join(models.Room).filter(
+            models.RoomMember.user_id==me.id, models.Room.room_type=="ai").first()
+        if existing: return room_dict(existing.room,me.id,db)
+        room=models.Room(name="Техподдержка",room_type="ai",created_by=me.id)
+        db.add(room); db.flush()
+        db.add(models.RoomMember(room_id=room.id,user_id=me.id,is_admin=True))
+        db.commit(); db.refresh(room)
+        return room_dict(room,me.id,db)
+    room=_get_or_create_support_room(db,admin.id,me.id)
+    return room_dict(room,me.id,db)
+
+def _get_or_create_support_room(db, admin_id, user_id):
+    """Находит или создаёт чат поддержки между admin и user"""
+    if admin_id==user_id:
+        # Если admin открывает сам себе — ищем AI
+        existing=db.query(models.RoomMember).join(models.Room).filter(
+            models.RoomMember.user_id==user_id,models.Room.room_type=="ai").first()
+        if existing: return existing.room
+    # Ищем существующий чат
+    q1=db.query(models.RoomMember.room_id).filter_by(user_id=admin_id).subquery()
+    q2=db.query(models.RoomMember.room_id).filter_by(user_id=user_id).subquery()
+    room=db.query(models.Room).filter(
+        models.Room.room_type=="chat",
+        models.Room.id.in_(q1),models.Room.id.in_(q2)).first()
+    if room: return room
+    room=models.Room(name="Поддержка",room_type="chat",created_by=admin_id)
+    db.add(room); db.flush()
+    db.add(models.RoomMember(room_id=room.id,user_id=admin_id,is_admin=True))
+    if admin_id!=user_id:
+        db.add(models.RoomMember(room_id=room.id,user_id=user_id))
+    db.commit(); db.refresh(room); return room
 
 # ── WebSocket ─────────────────────────────────────────────────
 @app.websocket("/ws/{token}")
