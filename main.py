@@ -42,13 +42,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def on_startup():
     import asyncio, logging
     _log = logging.getLogger(__name__)
-    # Создаём таблицы и мигрируем в фоне — не блокируем старт
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _do_startup)
+    # Запускаем миграции в фоне — НЕ ждём, сервер стартует мгновенно
+    asyncio.get_event_loop().run_in_executor(None, _do_startup)
+    _log.info("Server ready, migrations running in background")
 
 def _do_startup():
-    import logging
+    import logging, time
     _log = logging.getLogger(__name__)
+    time.sleep(1)  # даём uvicorn секунду полностью подняться
     try:
         Base.metadata.create_all(bind=engine)
         _log.info("DB tables OK")
