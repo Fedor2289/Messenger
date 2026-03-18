@@ -312,8 +312,8 @@ async def update_me(body:schemas.ProfileUpdate, token:str=Query(...), db:Session
     if body.bio is not None: u.bio=body.bio or None
     if body.avatar_color is not None: u.avatar_color=body.avatar_color
     if body.avatar_img is not None:
-        if body.avatar_img and len(body.avatar_img)>3_000_000:
-            raise HTTPException(400,"Фото слишком большое (макс. 2 МБ)")
+        if body.avatar_img and len(body.avatar_img)>500_000:
+            raise HTTPException(400,"Фото слишком большое")
         u.avatar_img=body.avatar_img or None
     db.commit(); db.refresh(u); return u
 
