@@ -25,9 +25,6 @@ class User(Base):
     avatar_img      = Column(Text,        nullable=True)
     is_online       = Column(Boolean, default=False, nullable=False)
     last_seen       = Column(DateTime, nullable=True)
-    is_group        = Column(Boolean, default=False, nullable=True)  # для обратной совместимости с БД
-    avatar_img       = Column(Text, nullable=True)      # аватарка группы/канала (base64)
-    avatar_color     = Column(String(7), nullable=True)  # цвет аватарки группы
     created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     sent_messages   = relationship("Message", foreign_keys="Message.sender_id",
