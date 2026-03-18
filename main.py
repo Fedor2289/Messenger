@@ -7,12 +7,14 @@ import base64, httpx, json, logging, os, time
 from collections import defaultdict
 from datetime import datetime
 from typing import List, Optional
+from pywebpush import webpush, WebPushException
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import text as sql_text
 
 import models, schemas
 from auth import create_token, decode_token, hash_password, verify_password
@@ -31,6 +33,38 @@ MAX_UPLOAD      = 200 * 1024 * 1024  # 200 МБ
 YADISK_TOKEN    = os.getenv("YADISK_TOKEN", "")
 YADISK_FOLDER   = os.getenv("YADISK_FOLDER", "messenger")
 
+# ── VAPID Push ────────────────────────────────────────────────
+VAPID_PRIVATE   = os.getenv("VAPID_PRIVATE_KEY", "")
+VAPID_PUBLIC    = os.getenv("VAPID_PUBLIC_KEY", "")
+VAPID_EMAIL     = os.getenv("VAPID_EMAIL", "mailto:admin@messenger.app")
+
+def _ensure_vapid():
+    global VAPID_PRIVATE, VAPID_PUBLIC
+    if VAPID_PRIVATE and VAPID_PUBLIC:
+        return
+    try:
+        from py_vapid import Vapid
+        from cryptography.hazmat.primitives.serialization import (
+            Encoding, PrivateFormat, PublicFormat, NoEncryption
+        )
+        import base64 as _b64
+        v = Vapid()
+        v.generate_keys()
+        VAPID_PRIVATE = v.private_key.private_bytes(
+            encoding=Encoding.PEM,
+            format=PrivateFormat.PKCS8,
+            encryption_algorithm=NoEncryption()
+        ).decode()
+        raw_pub = v.public_key.public_bytes(
+            encoding=Encoding.X962,
+            format=PublicFormat.UncompressedPoint
+        )
+        VAPID_PUBLIC = _b64.urlsafe_b64encode(raw_pub).rstrip(b'=').decode()
+        logger.info(f"VAPID keys generated. Add to Railway env: VAPID_PUBLIC_KEY={VAPID_PUBLIC}")
+    except Exception as e:
+        logger.warning(f"VAPID setup failed: {e}. Push notifications disabled.")
+
+
 app = FastAPI(title="Messenger", version="4.0.0", docs_url="/api/docs")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
@@ -39,6 +73,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
 # чтобы uvicorn успел поднять HTTP до обращения к БД
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/sw.js")
+async def sw(): return FileResponse("static/sw.js", media_type="application/javascript")
 
 @app.on_event("startup")
 async def on_startup():
@@ -61,6 +98,10 @@ def _do_startup():
         import migrations; migrations.run()
     except Exception as e:
         _log.error(f"Migrations failed: {e}")
+    try:
+        _ensure_vapid()
+    except Exception as e:
+        _log.error(f"VAPID init failed: {e}")
 
 # ── Yandex Disk ───────────────────────────────────────────
 import uuid as _uuid
@@ -273,6 +314,99 @@ async def index(): return FileResponse("static/index.html")
 
 @app.get("/health")
 async def health(): return {"status":"ok","online":manager.online_count}
+
+# ── Push Notifications ────────────────────────────────────────
+@app.get("/api/push/vapid-key")
+async def vapid_key():
+    return {"publicKey": VAPID_PUBLIC or ""}
+
+@app.post("/api/push/subscribe")
+async def push_subscribe(body:dict, token:str=Query(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    # Сохраняем подписку в БД
+    sub_json=json.dumps(body)
+    db.execute(
+        sql_text(
+            "INSERT INTO push_subscriptions(user_id,subscription) VALUES(:uid,:sub) "
+            "ON CONFLICT(user_id,endpoint) DO UPDATE SET subscription=:sub"
+        ),
+        {"uid":me.id,"sub":sub_json,"endpoint":body.get("endpoint","")}
+    )
+    db.commit()
+    return {"ok":True}
+
+@app.delete("/api/push/unsubscribe")
+async def push_unsubscribe(token:str=Query(...), endpoint:str=Query(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    db.execute(
+        sql_text("DELETE FROM push_subscriptions WHERE user_id=:uid AND endpoint=:ep"),
+        {"uid":me.id,"ep":endpoint}
+    )
+    db.commit()
+    return {"ok":True}
+
+async def send_push_to_user(db, user_id:int, title:str, body:str, room_id:int=None, tag:str="msg"):
+    if not VAPID_PRIVATE or not VAPID_PUBLIC:
+        return
+    try:
+        rows=db.execute(
+            sql_text("SELECT subscription FROM push_subscriptions WHERE user_id=:uid"),
+            {"uid":user_id}
+        ).fetchall()
+    except Exception:
+        return
+    payload=json.dumps({"title":title,"body":body,"room_id":room_id,"tag":tag})
+    for row in rows:
+        try:
+            sub=json.loads(row[0])
+            webpush(
+                subscription_info=sub,
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE,
+                vapid_claims={"sub":VAPID_EMAIL}
+            )
+        except WebPushException as e:
+            if "410" in str(e) or "404" in str(e):
+                # Подписка устарела — удаляем
+                try:
+                    db.execute(
+                        sql_text("DELETE FROM push_subscriptions WHERE user_id=:uid AND subscription=:sub"),
+                        {"uid":user_id,"sub":row[0]}
+                    )
+                    db.commit()
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.debug(f"Push send error: {e}")
+
+# ── Ringtone Upload ───────────────────────────────────────────
+@app.post("/api/upload/ringtone")
+async def upload_ringtone(token:str=Query(...), file:UploadFile=File(...), db:Session=Depends(get_db)):
+    me=auth(token,db)
+    raw=await file.read()
+    if len(raw)>20*1024*1024: raise HTTPException(400,"Файл слишком большой (макс. 20 МБ)")
+    mime=file.content_type or "audio/mpeg"
+    if not mime.startswith("audio/"):
+        raise HTTPException(400,"Только аудиофайлы")
+    fname=file.filename or "ringtone.mp3"
+    yadisk_uri=await yadisk_upload(raw, fname, mime)
+    if not yadisk_uri: raise HTTPException(503,"Не удалось загрузить на Яндекс.Диск")
+    # Сохраняем как сообщение в AI-комнате пользователя (или создаём её)
+    ai_room=db.query(models.RoomMember).join(models.Room).filter(
+        models.RoomMember.user_id==me.id, models.Room.room_type=="ai").first()
+    if not ai_room:
+        room=models.Room(name="ИИ Ассистент",room_type="ai",created_by=me.id)
+        db.add(room); db.flush()
+        db.add(models.RoomMember(room_id=room.id,user_id=me.id,is_admin=True))
+        db.commit(); db.refresh(room)
+        target_room_id=room.id
+    else:
+        target_room_id=ai_room.room_id
+    msg=models.Message(msg_type="voice",content=fname,media_data=yadisk_uri,
+                       media_mime=mime,media_size=len(raw),sender_id=me.id,
+                       room_id=target_room_id,reply_to_id=None)
+    db.add(msg); db.commit(); db.refresh(msg)
+    return {"media_id": msg.id, "url": f"/api/media/{msg.id}"}
 
 # Auth
 @app.post("/api/register", response_model=schemas.TokenResponse)
@@ -524,6 +658,12 @@ async def upload(rid:int, token:str=Query(...), file:UploadFile=File(...),
     m=load_msg(db,msg.id)
     ids=[mb.user_id for mb in db.query(models.RoomMember).filter_by(room_id=rid).all()]
     await manager.broadcast(ids,{"type":"new_message","message":msg_dict(m)})
+    # Push тем кто офлайн
+    _sndr = m.get("sender") or {}; sender_name = _sndr.get("display_name") or _sndr.get("username") or "Кто-то"
+    body = m["content"][:80] if m.get("msg_type")=="text" else "📎 Медиафайл"
+    for uid in ids:
+        if not manager.is_online(uid):
+            await send_push_to_user(db, uid, sender_name, body, room_id=rid)
     return msg_dict(m)
 
 @app.get("/api/media/{msg_id}/url")
@@ -985,6 +1125,12 @@ async def _on_call(db,caller_id,d):
     # Добавляем caller_id в данные и пересылаем
     payload={**d,"caller_id":caller_id}
     await manager.send(target_id,payload)
+    # Push для входящего звонка если адресат офлайн
+    if t=="call_offer" and not manager.is_online(target_id):
+        caller=db.get(models.User,caller_id)
+        cname=(caller.display_name or caller.username) if caller else "Кто-то"
+        ctype="видео" if d.get("call_type")=="video" else "голосовой"
+        await send_push_to_user(db,target_id,f"📞 Входящий {ctype} звонок",cname,tag="call")
     # Записываем в историю звонков
     if t=="call_offer" and room_id:
         ct=d.get("call_type","voice")

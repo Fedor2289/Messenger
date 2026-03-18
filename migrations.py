@@ -96,6 +96,16 @@ def _run_migrations():
                 duration_sec INTEGER
             )
         """)
+        _exec(conn, """
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                id           SERIAL PRIMARY KEY,
+                user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                endpoint     TEXT NOT NULL,
+                subscription TEXT NOT NULL,
+                created_at   TIMESTAMP DEFAULT NOW(),
+                UNIQUE(user_id, endpoint)
+            )
+        """)
 
         logger.info("Migrations OK")
     finally:
