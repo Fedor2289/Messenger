@@ -35,13 +35,13 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int; username: str; display_name: Optional[str] = None
     bio: Optional[str] = None; avatar_img: Optional[str] = None
-    email: str; is_online: bool; avatar_color: str; created_at: datetime
+    email: str; is_online: bool; avatar_color: Optional[str] = "#5288c1"; created_at: datetime
     last_seen: Optional[datetime] = None
 
 class UserShort(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int; username: str; display_name: Optional[str] = None
-    avatar_img: Optional[str] = None; is_online: bool; avatar_color: str
+    avatar_img: Optional[str] = None; is_online: bool; avatar_color: Optional[str] = "#5288c1"
     last_seen: Optional[datetime] = None
 
 class TokenResponse(BaseModel):

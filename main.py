@@ -28,6 +28,8 @@ CEREBRAS_KEY    = os.getenv("CEREBRAS_API_KEY", "")
 GIPHY_API_KEY   = os.getenv("GIPHY_API_KEY", "")
 AI_BACKEND      = os.getenv("AI_BACKEND", "auto")
 MAX_UPLOAD      = 15 * 1024 * 1024  # 15 МБ
+YADISK_TOKEN    = os.getenv("YADISK_TOKEN", "")
+YADISK_FOLDER   = os.getenv("YADISK_FOLDER", "messenger")
 
 app = FastAPI(title="Messenger", version="4.0.0", docs_url="/api/docs")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
@@ -190,7 +192,7 @@ def msg_dict(msg):
             "sender":{"id":rs.id,"username":rs.username,
                       "display_name":getattr(rs,"display_name",None),
                       "avatar_img":getattr(rs,"avatar_img",None),
-                      "avatar_color":rs.avatar_color,"is_online":manager.is_online(rs.id)} if rs else None}
+                      "avatar_color":rs.avatar_color or "#5288c1","is_online":manager.is_online(rs.id)} if rs else None}
     return {
         "id":msg.id,"msg_type":msg.msg_type,
         "content":"[Сообщение удалено]" if msg.is_deleted else msg.content,
@@ -207,7 +209,7 @@ def msg_dict(msg):
             "id":s.id,"username":s.username,
             "display_name":getattr(s,"display_name",None),
             "avatar_img":getattr(s,"avatar_img",None),
-            "avatar_color":s.avatar_color,"is_online":manager.is_online(s.id),
+            "avatar_color":s.avatar_color or "#5288c1","is_online":manager.is_online(s.id),
             "last_seen":s.last_seen.isoformat() if getattr(s,"last_seen",None) else None,
         } if s else {"id":0,"username":"Удалён","display_name":None,"avatar_img":None,
                      "avatar_color":"#888","is_online":False,"last_seen":None},
@@ -218,7 +220,7 @@ def room_dict(room, viewer_id, db):
         "id":m.user.id,"username":m.user.username,
         "display_name":getattr(m.user,"display_name",None),
         "avatar_img":getattr(m.user,"avatar_img",None),
-        "avatar_color":m.user.avatar_color,
+        "avatar_color":m.user.avatar_color or "#5288c1",
         "is_online":manager.is_online(m.user.id),
         "is_admin":m.is_admin,
         "last_seen":m.user.last_seen.isoformat() if getattr(m.user,"last_seen",None) else None,
@@ -273,9 +275,13 @@ async def register(body:schemas.RegisterRequest, db:Session=Depends(get_db)):
         raise HTTPException(400,"Имя пользователя уже занято")
     if db.query(models.User).filter_by(email=body.email).first():
         raise HTTPException(400,"Email уже зарегистрирован")
+    from models import _random_color
     u=models.User(username=body.username,email=body.email,
-                  hashed_password=hash_password(body.password))
+                  hashed_password=hash_password(body.password),
+                  avatar_color=_random_color())
     db.add(u); db.commit(); db.refresh(u)
+    if not u.avatar_color:
+        u.avatar_color = _random_color(); db.commit(); db.refresh(u)
     return {"access_token":create_token(u.id),"token_type":"bearer","user":u}
 
 @app.post("/api/login", response_model=schemas.TokenResponse)
@@ -283,6 +289,9 @@ async def login(body:schemas.LoginRequest, db:Session=Depends(get_db)):
     u=db.query(models.User).filter_by(username=body.username).first()
     if not u or not verify_password(body.password,u.hashed_password):
         raise HTTPException(401,"Неверное имя или пароль")
+    if not u.avatar_color:
+        from models import _random_color
+        u.avatar_color = _random_color(); db.commit(); db.refresh(u)
     return {"access_token":create_token(u.id),"token_type":"bearer","user":u}
 
 # Profile
@@ -394,7 +403,7 @@ async def mbrs(rid:int, token:str=Query(...), db:Session=Depends(get_db)):
     return [{"id":m.user.id,"username":m.user.username,
              "display_name":getattr(m.user,"display_name",None),
              "avatar_img":getattr(m.user,"avatar_img",None),
-             "avatar_color":m.user.avatar_color,
+             "avatar_color":m.user.avatar_color or "#5288c1",
              "is_online":manager.is_online(m.user.id),
              "is_admin":m.is_admin,
              "last_seen":m.user.last_seen.isoformat() if getattr(m.user,"last_seen",None) else None}

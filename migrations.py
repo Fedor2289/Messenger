@@ -29,6 +29,20 @@ def _run_migrations():
         _col(conn, "users", "avatar_img",    "TEXT")
         _col(conn, "users", "last_seen",     "TIMESTAMP")
 
+        # Заполняем avatar_color для существующих пользователей у которых NULL
+        _exec(conn, """
+            UPDATE users SET avatar_color = (
+                CASE (id % 12)
+                    WHEN 0 THEN '#E17055' WHEN 1 THEN '#00B894'
+                    WHEN 2 THEN '#0984E3' WHEN 3 THEN '#6C5CE7'
+                    WHEN 4 THEN '#FDCB6E' WHEN 5 THEN '#E84393'
+                    WHEN 6 THEN '#00CEC9' WHEN 7 THEN '#55EFC4'
+                    WHEN 8 THEN '#74B9FF' WHEN 9 THEN '#A29BFE'
+                    WHEN 10 THEN '#FD79A8' ELSE '#FAB1A0'
+                END
+            ) WHERE avatar_color IS NULL
+        """)
+
         # ── rooms ──────────────────────────────────────────────
         _col(conn, "rooms", "description",   "VARCHAR(200)")
         _col(conn, "rooms", "room_type",     "VARCHAR(16) DEFAULT 'chat'")
