@@ -520,24 +520,54 @@ async def upload(rid:int, token:str=Query(...), file:UploadFile=File(...),
     return msg_dict(m)
 
 @app.get("/api/media/{msg_id}")
-async def get_media(msg_id:int, token:str=Query(...), db:Session=Depends(get_db)):
-    """Прокси для получения файла с Яндекс Диска"""
-    from fastapi.responses import RedirectResponse, Response
+async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Session=Depends(get_db)):
+    """Прокси для получения файла. Для аудио/видео/изображений — стримим содержимое напрямую."""
+    from fastapi.responses import RedirectResponse, Response, StreamingResponse
     auth(token,db)
     msg=db.get(models.Message,msg_id)
     if not msg or not msg.media_data: raise HTTPException(404,"Медиа не найдено")
-    
+
     if msg.media_data.startswith("yadisk:"):
-        # Файл на Яндекс Диске
         public_key=msg.media_data[7:]
         download_url=await yadisk_get_download_url(public_key)
         if not download_url: raise HTTPException(503,"Не удалось получить файл с Яндекс Диска")
-        return RedirectResponse(url=download_url, status_code=302)
+
+        mime = msg.media_mime or "application/octet-stream"
+        # Для аудио, видео и изображений — качаем и отдаём напрямую
+        # чтобы браузер мог стримить без проблем с истекающими редиректами
+        is_streamable = (
+            mime.startswith("audio/") or
+            mime.startswith("video/") or
+            mime.startswith("image/")
+        )
+        if is_streamable:
+            try:
+                async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
+                    r = await c.get(download_url)
+                    if r.status_code != 200:
+                        raise HTTPException(502, "Ошибка получения файла")
+                    fname = msg.content or "file"
+                    disposition = "attachment" if dl else "inline"
+                    return Response(
+                        content=r.content,
+                        media_type=mime,
+                        headers={"Content-Disposition": f'{disposition}; filename="{fname}"',
+                                 "Cache-Control": "public, max-age=3600"}
+                    )
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"YaDisk proxy stream error: {e}")
+                raise HTTPException(502, "Ошибка получения файла")
+        else:
+            # Для файлов-вложений — редирект достаточен
+            return RedirectResponse(url=download_url, status_code=302)
     else:
-        # Старый формат: base64 в БД
         raw=base64.b64decode(msg.media_data)
+        fname = msg.content or "file"
+        disposition = "attachment" if dl else "inline"
         return Response(content=raw, media_type=msg.media_mime or "application/octet-stream",
-                        headers={"Content-Disposition": f'inline; filename="{msg.content}"'})
+                        headers={"Content-Disposition": f'{disposition}; filename="{fname}"'})
 
 # Reactions
 @app.post("/api/messages/{mid}/react")
