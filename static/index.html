@@ -1816,7 +1816,7 @@ function trigFile(accept){closeAttach();const fi=document.getElementById('file-i
 async function handleFile(input){
   if(!input.files.length||!S.roomId) return;
   const file=input.files[0];
-  if(file.size>15*1024*1024){toast('Файл слишком большой (макс. 15 МБ)','err');return;}
+  if(file.size>200*1024*1024){toast('Файл слишком большой (макс. 200 МБ)','err');return;}
   const fd=new FormData();fd.append('file',file);
   if(S.replyTo) fd.append('reply_to_id',S.replyTo.id);
   toast('Загрузка...');
