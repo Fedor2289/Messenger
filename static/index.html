@@ -1905,12 +1905,14 @@ async function loadMediaImg(el,msgId){
 function autoLoadMedia(container){
   container.querySelectorAll('img[data-mid]').forEach(img=>{
     const mid=img.dataset.mid;
-    if(!mid||img.src) return;
+    // img.src никогда не пустой в браузере — проверяем getAttribute
+    if(!mid||img.getAttribute('src')) return;
     _getMediaUrl(mid).then(url=>{
       img.src=url;
+      img.style.background='';
       img.onclick=()=>openLB(url);
       img.style.cursor='pointer';
-    }).catch(()=>{});
+    }).catch(()=>{img.alt='Ошибка';});
   });
 }
 async function loadVideoEl(el){
@@ -2059,15 +2061,19 @@ function prevAv(input){
   if(file.size>2*1024*1024){toast('Фото max 2 МБ','err');return;}
   const r=new FileReader();r.onload=e=>{S._pendingAv=e.target.result;const av=document.getElementById('prof-av-el');av.style.backgroundImage=`url(${S._pendingAv})`;av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.textContent='';};r.readAsDataURL(file);
 }
+let _savingProfile=false;
 async function saveProfile(){
+  if(_savingProfile) return;
+  _savingProfile=true;
+  const btn=document.querySelector('#m-prof .btn-p');if(btn)btn.disabled=true;
   const dn_v=document.getElementById('prof-dn').value.trim();
   const bio_v=document.getElementById('prof-bio').value.trim();
   const body={display_name:dn_v||null,bio:bio_v||null,avatar_color:S.me.avatar_color};
   if(S._pendingAv!==null) body.avatar_img=S._pendingAv||'';
   try{const u=await http('PATCH','/api/me',body);S.me=u;updMyInfo();updChatHead();
-    // обновляем данные юзера в комнатах без перезагрузки
     S.rooms.forEach(r=>r.members.forEach(m=>{if(m.id===u.id){m.display_name=u.display_name;m.avatar_img=u.avatar_img;m.avatar_color=u.avatar_color;}}));
     renderRooms();closeM('m-prof');toast('Профиль сохранён','ok');}catch(e){toast(e.message,'err');}
+  finally{_savingProfile=false;if(btn)btn.disabled=false;}
 }
 function showUserProfile(uid){
   if(!uid||uid===0) return; // AI
