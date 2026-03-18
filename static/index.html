@@ -1603,14 +1603,26 @@ function buildContent(msg){
   if(msg.is_deleted) return '<div class="txt" style="font-style:italic;opacity:.6">[Сообщение удалено]</div>';
   const t=msg.msg_type;
   if(t==='sticker') return `<div class="sticker">${esc(msg.content)}</div>`;
-  if(t==='image'){const src=`data:${msg.media_mime};base64,${msg.media_data}`;return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="${esc(msg.content)}">`;}
-  if(t==='gif'){const src=`data:${msg.media_mime};base64,${msg.media_data}`;return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;}
-  if(t==='video'){const src=`data:${msg.media_mime};base64,${msg.media_data}`;return `<video controls style="max-width:280px;border-radius:10px;display:block">${'<source src="'+src+'" type="'+msg.media_mime+'">'}</video>`;}
-  if(t==='voice'){const src=`data:${msg.media_mime||'audio/webm'};base64,${msg.media_data}`;const wid='vp-'+msg.id;
+  
+  // Определяем источник медиа: Яндекс Диск или base64
+  function mediaSrc(){
+    if(!msg.media_data) return '';
+    if(msg.media_data.startsWith('yadisk:'))
+      return `${API}/api/media/${msg.id}?token=${S.token}`;
+    return `data:${msg.media_mime};base64,${msg.media_data}`;
+  }
+  
+  if(t==='image'){const src=mediaSrc();return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="${esc(msg.content)}">`;}
+  if(t==='gif'){const src=mediaSrc();return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;}
+  if(t==='video'){const src=mediaSrc();return `<video controls style="max-width:280px;border-radius:10px;display:block">${'<source src="'+src+'" type="'+msg.media_mime+'">'}</video>`;}
+  if(t==='voice'){const src=mediaSrc();const wid='vp-'+msg.id;
     return `<div class="vp"><button class="vp-btn" onclick="vpToggle('${wid}','${src}')">▶</button><div class="vp-track"><div class="vp-waves">${Array(18).fill(0).map((_,i)=>`<div class="vp-wave" style="height:${4+Math.abs(Math.sin(i*0.7))*14}px"></div>`).join('')}</div><div class="vp-bar" onclick="vpSeek(event,'${wid}')"><div class="vp-prog" id="prog-${wid}"></div></div><div class="vp-times"><span id="cur-${wid}">0:00</span><span id="dur-${wid}">—</span></div></div><audio id="${wid}" src="${src}" onended="vpEnd('${wid}')" ontimeupdate="vpTick('${wid}')" onloadedmetadata="vpMeta('${wid}')"></audio></div>`;}
-  if(t==='file'){const src=`data:${msg.media_mime||'application/octet-stream'};base64,${msg.media_data}`;
-    return `<div class="msg-file"><div class="mf-ico">📄</div><div class="mf-info"><div class="mf-name">${esc(msg.content)}</div><div class="mf-size">${fmtSz(msg.media_size)}</div><div class="mf-dl" onclick="dlFile('${src}','${esc(msg.content)}')">⬇ Скачать</div></div></div>`;}
-  // GIF from URL (Tenor)
+  if(t==='file'){
+    const dlUrl=msg.media_data&&msg.media_data.startsWith('yadisk:')
+      ?`${API}/api/media/${msg.id}?token=${S.token}&dl=1`
+      :`data:${msg.media_mime||'application/octet-stream'};base64,${msg.media_data}`;
+    return `<div class="msg-file"><div class="mf-ico">📄</div><div class="mf-info"><div class="mf-name">${esc(msg.content)}</div><div class="mf-size">${fmtSz(msg.media_size)}</div><div class="mf-dl" onclick="dlFile('${dlUrl}','${esc(msg.content)}')">⬇ Скачать</div></div></div>`;}
+  // GIF from URL (Giphy/Tenor)
   if(t==='gif_url') return `<img class="msg-gif" src="${esc(msg.content)}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;
   return `<div class="txt">${esc(msg.content)}</div>`;
 }
