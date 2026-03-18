@@ -40,14 +40,29 @@ VAPID_EMAIL     = os.getenv("VAPID_EMAIL", "mailto:admin@messenger.app")
 
 def _ensure_vapid():
     global VAPID_PRIVATE, VAPID_PUBLIC
+    # Если ключи уже в env — используем их
     if VAPID_PRIVATE and VAPID_PUBLIC:
         return
+    # Пробуем загрузить из файла (персистентное хранение между рестартами)
+    _key_file = "/tmp/vapid_keys.json"
+    try:
+        import json as _json
+        with open(_key_file) as f:
+            keys = _json.load(f)
+            if keys.get("private") and keys.get("public"):
+                VAPID_PRIVATE = keys["private"]
+                VAPID_PUBLIC  = keys["public"]
+                logger.info(f"VAPID keys loaded from cache. Public: {VAPID_PUBLIC[:20]}...")
+                return
+    except Exception:
+        pass
+    # Генерируем новые ключи
     try:
         from py_vapid import Vapid
         from cryptography.hazmat.primitives.serialization import (
             Encoding, PrivateFormat, PublicFormat, NoEncryption
         )
-        import base64 as _b64
+        import base64 as _b64, json as _json
         v = Vapid()
         v.generate_keys()
         VAPID_PRIVATE = v.private_key.private_bytes(
@@ -60,7 +75,17 @@ def _ensure_vapid():
             format=PublicFormat.UncompressedPoint
         )
         VAPID_PUBLIC = _b64.urlsafe_b64encode(raw_pub).rstrip(b'=').decode()
-        logger.info(f"VAPID keys generated. Add to Railway env: VAPID_PUBLIC_KEY={VAPID_PUBLIC}")
+        # Сохраняем в файл чтобы пережить перезапуск в рамках одного деплоя
+        try:
+            with open(_key_file, "w") as f:
+                _json.dump({"private": VAPID_PRIVATE, "public": VAPID_PUBLIC}, f)
+        except Exception:
+            pass
+        logger.info(
+            f"VAPID keys generated. Добавь в Railway Variables:\n"
+            f"  VAPID_PUBLIC_KEY={VAPID_PUBLIC}\n"
+            f"  VAPID_PRIVATE_KEY={VAPID_PRIVATE.strip()}"
+        )
     except Exception as e:
         logger.warning(f"VAPID setup failed: {e}. Push notifications disabled.")
 
