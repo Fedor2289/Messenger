@@ -60,6 +60,95 @@ def _do_startup():
     except Exception as e:
         _log.error(f"Migrations failed: {e}")
 
+# ── Yandex Disk ───────────────────────────────────────────
+import uuid as _uuid
+
+async def yadisk_upload(raw: bytes, filename: str, mime: str) -> str:
+    """
+    Загружает файл на Яндекс Диск и возвращает публичный URL.
+    Если токена нет — возвращает пустую строку (fallback на base64).
+    """
+    if not YADISK_TOKEN:
+        return ""
+    
+    # Генерируем уникальное имя чтобы избежать коллизий
+    ext = filename.rsplit(".", 1)[-1] if "." in filename else "bin"
+    unique_name = f"{_uuid.uuid4().hex}.{ext}"
+    disk_path = f"/{YADISK_FOLDER}/{unique_name}"
+    
+    try:
+        async with httpx.AsyncClient(timeout=60) as c:
+            headers = {"Authorization": f"OAuth {YADISK_TOKEN}"}
+            
+            # Создаём папку если нет
+            await c.put(
+                "https://cloud-api.yandex.net/v1/disk/resources",
+                headers=headers,
+                params={"path": f"/{YADISK_FOLDER}"}
+            )  # игнорируем ошибку если папка уже есть
+            
+            # 1. Получаем URL для загрузки
+            r = await c.get(
+                "https://cloud-api.yandex.net/v1/disk/resources/upload",
+                headers=headers,
+                params={"path": disk_path, "overwrite": "true"}
+            )
+            if r.status_code != 200:
+                logger.error(f"YaDisk upload link error: {r.status_code} {r.text}")
+                return ""
+            upload_url = r.json()["href"]
+            
+            # 2. Загружаем файл
+            up = await c.put(upload_url, content=raw, headers={"Content-Type": mime})
+            if up.status_code not in (200, 201):
+                logger.error(f"YaDisk upload error: {up.status_code}")
+                return ""
+            
+            # 3. Публикуем файл
+            pub = await c.put(
+                "https://cloud-api.yandex.net/v1/disk/resources/publish",
+                headers=headers,
+                params={"path": disk_path}
+            )
+            
+            # 4. Получаем public_key для скачивания
+            info = await c.get(
+                "https://cloud-api.yandex.net/v1/disk/resources",
+                headers=headers,
+                params={"path": disk_path}
+            )
+            if info.status_code != 200:
+                return ""
+            
+            data = info.json()
+            public_key = data.get("public_key", "")
+            if not public_key:
+                return ""
+            
+            # Возвращаем специальный URI — сервер будет проксировать скачивание
+            return f"yadisk:{public_key}"
+    except Exception as e:
+        logger.error(f"YaDisk upload exception: {e}")
+        return ""
+
+async def yadisk_get_download_url(public_key: str) -> str:
+    """Получает прямую ссылку для скачивания с Яндекс Диска"""
+    if not YADISK_TOKEN:
+        return ""
+    try:
+        async with httpx.AsyncClient(timeout=10) as c:
+            r = await c.get(
+                "https://cloud-api.yandex.net/v1/disk/public/resources/download",
+                headers={"Authorization": f"OAuth {YADISK_TOKEN}"},
+                params={"public_key": public_key}
+            )
+            if r.status_code == 200:
+                return r.json().get("href", "")
+    except Exception as e:
+        logger.error(f"YaDisk get download URL: {e}")
+    return ""
+
+
 # ── Rate limiter ─────────────────────────────────────────────
 class RL:
     def __init__(self, n=20, w=10.0):
@@ -387,22 +476,59 @@ async def upload(rid:int, token:str=Query(...), file:UploadFile=File(...),
     if not db.query(models.RoomMember).filter_by(room_id=rid,user_id=me.id).first():
         raise HTTPException(403,"Нет доступа")
     raw=await file.read()
-    if len(raw)>MAX_UPLOAD: raise HTTPException(400,"Файл слишком большой (макс. 15 МБ)")
+    if len(raw)>MAX_UPLOAD: raise HTTPException(400,f"Файл слишком большой (макс. {MAX_UPLOAD//1024//1024} МБ)")
     mime=file.content_type or "application/octet-stream"
-    b64=base64.b64encode(raw).decode()
+    fname=file.filename or "file"
     if mime.startswith("image/"): mt="gif" if mime=="image/gif" else "image"
     elif mime.startswith("audio/"): mt="voice"
     elif mime.startswith("video/"): mt="video"
     else: mt="file"
-    msg=models.Message(msg_type=mt,content=file.filename or "file",
-                       media_data=b64,media_mime=mime,media_size=len(raw),
-                       sender_id=me.id,room_id=rid,
-                       reply_to_id=reply_to_id or None)
+    
+    # Пробуем загрузить на Яндекс Диск
+    yadisk_uri = await yadisk_upload(raw, fname, mime)
+    
+    if yadisk_uri:
+        # Файл на Яндекс Диске — храним только URI, не base64
+        msg=models.Message(msg_type=mt, content=fname,
+                           media_data=yadisk_uri,   # "yadisk:public_key"
+                           media_mime=mime, media_size=len(raw),
+                           sender_id=me.id, room_id=rid,
+                           reply_to_id=reply_to_id or None)
+        logger.info(f"Uploaded to YaDisk: {fname} ({len(raw)//1024}KB)")
+    else:
+        # Fallback: храним в БД как base64 (если нет токена Диска)
+        b64=base64.b64encode(raw).decode()
+        msg=models.Message(msg_type=mt, content=fname,
+                           media_data=b64, media_mime=mime, media_size=len(raw),
+                           sender_id=me.id, room_id=rid,
+                           reply_to_id=reply_to_id or None)
+        logger.info(f"Stored in DB (no YaDisk): {fname} ({len(raw)//1024}KB)")
+    
     db.add(msg); db.commit()
     m=load_msg(db,msg.id)
     ids=[mb.user_id for mb in db.query(models.RoomMember).filter_by(room_id=rid).all()]
     await manager.broadcast(ids,{"type":"new_message","message":msg_dict(m)})
     return msg_dict(m)
+
+@app.get("/api/media/{msg_id}")
+async def get_media(msg_id:int, token:str=Query(...), db:Session=Depends(get_db)):
+    """Прокси для получения файла с Яндекс Диска"""
+    from fastapi.responses import RedirectResponse, Response
+    auth(token,db)
+    msg=db.get(models.Message,msg_id)
+    if not msg or not msg.media_data: raise HTTPException(404,"Медиа не найдено")
+    
+    if msg.media_data.startswith("yadisk:"):
+        # Файл на Яндекс Диске
+        public_key=msg.media_data[7:]
+        download_url=await yadisk_get_download_url(public_key)
+        if not download_url: raise HTTPException(503,"Не удалось получить файл с Яндекс Диска")
+        return RedirectResponse(url=download_url, status_code=302)
+    else:
+        # Старый формат: base64 в БД
+        raw=base64.b64decode(msg.media_data)
+        return Response(content=raw, media_type=msg.media_mime or "application/octet-stream",
+                        headers={"Content-Disposition": f'inline; filename="{msg.content}"'})
 
 # Reactions
 @app.post("/api/messages/{mid}/react")
