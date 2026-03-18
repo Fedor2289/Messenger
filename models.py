@@ -25,6 +25,7 @@ class User(Base):
     avatar_img      = Column(Text,        nullable=True)
     is_online       = Column(Boolean, default=False, nullable=False)
     last_seen       = Column(DateTime, nullable=True)
+    is_group        = Column(Boolean, default=False, nullable=True)  # для обратной совместимости с БД
     created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     sent_messages   = relationship("Message", foreign_keys="Message.sender_id",
@@ -47,15 +48,14 @@ class Room(Base):
     room_type       = Column(String(16), default='chat', nullable=False)
     created_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     pinned_msg_id   = Column(Integer, nullable=True)
+    is_group        = Column(Boolean, default=False, nullable=True)  # для обратной совместимости с БД
     created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     messages        = relationship("Message", back_populates="room",
                                    order_by="Message.created_at", lazy="select")
     members         = relationship("RoomMember", back_populates="room", lazy="joined")
 
-    @property
-    def is_group(self):
-        return self.room_type in ('group', 'channel')
+
 
 
 class RoomMember(Base):

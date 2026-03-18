@@ -234,7 +234,7 @@ async def direct(body:schemas.DirectRoomRequest, token:str=Query(...), db:Sessio
     if not other: raise HTTPException(404,"Пользователь не найден")
     room=find_direct(db,me.id,body.user_id)
     if not room:
-        room=models.Room(room_type='chat',is_group=False,created_by=me.id)
+        room=models.Room(room_type='chat',created_by=me.id)
         db.add(room); db.flush()
         db.add(models.RoomMember(room_id=room.id,user_id=me.id,is_admin=True))
         db.add(models.RoomMember(room_id=room.id,user_id=body.user_id))
@@ -244,7 +244,7 @@ async def direct(body:schemas.DirectRoomRequest, token:str=Query(...), db:Sessio
 @app.post("/api/rooms/group")
 async def group(body:schemas.GroupRoomRequest, token:str=Query(...), db:Session=Depends(get_db)):
     me=auth(token,db)
-    room=models.Room(name=body.name,room_type='group',is_group=True,created_by=me.id)
+    room=models.Room(name=body.name,room_type='group',created_by=me.id)
     db.add(room); db.flush()
     for uid in list(set([me.id]+body.member_ids)):
         db.add(models.RoomMember(room_id=room.id,user_id=uid,is_admin=(uid==me.id)))
@@ -254,7 +254,7 @@ async def group(body:schemas.GroupRoomRequest, token:str=Query(...), db:Session=
 @app.post("/api/rooms/channel")
 async def channel(body:schemas.ChannelRequest, token:str=Query(...), db:Session=Depends(get_db)):
     me=auth(token,db)
-    room=models.Room(name=body.name,room_type='channel',is_group=True,
+    room=models.Room(name=body.name,room_type='channel',
                      description=body.description,created_by=me.id)
     db.add(room); db.flush()
     db.add(models.RoomMember(room_id=room.id,user_id=me.id,is_admin=True))
@@ -503,7 +503,7 @@ async def create_ai_room(token:str=Query(...), db:Session=Depends(get_db)):
         models.RoomMember.user_id==me.id,
         models.Room.room_type=="ai").first()
     if existing: return room_dict(existing.room,me.id,db)
-    room=models.Room(name="ИИ Ассистент",room_type="ai",is_group=False,created_by=me.id)
+    room=models.Room(name="ИИ Ассистент",room_type="ai",created_by=me.id)
     db.add(room); db.flush()
     db.add(models.RoomMember(room_id=room.id,user_id=me.id,is_admin=True))
     db.commit(); db.refresh(room)
