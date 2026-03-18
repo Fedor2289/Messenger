@@ -40,7 +40,7 @@ input,textarea,button{font-family:inherit}
 /* ── AV ── */
 .av{border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-weight:700;color:#fff;flex-shrink:0;position:relative;text-transform:uppercase;
-  overflow:hidden;background-size:cover;background-position:center;user-select:none}
+  overflow:hidden;background-size:cover;background-position:center;user-select:none;background:#5288c1}
 .av46{width:46px;height:46px;font-size:17px}.av40{width:40px;height:40px;font-size:15px}
 .av36{width:36px;height:36px;font-size:13px}.av32{width:32px;height:32px;font-size:11px}
 .av56{width:56px;height:56px;font-size:20px}.av72{width:72px;height:72px;font-size:26px}
@@ -1340,11 +1340,12 @@ async function loadRooms(){
 }
 
 function swSBTab(t){
+  const alreadyOn=(S.sbTab===t);
   S.sbTab=t;
   document.querySelectorAll('.sb-tab').forEach((el,i)=>el.classList.toggle('on',
     (i===0&&t==='chats')||(i===1&&t==='channels')));
   renderRooms();
-  if(t==='channels') openChannelsExplore();
+  if(t==='channels'&&alreadyOn) openChannelsExplore();
 }
 
 function renderRooms(list){
@@ -1361,14 +1362,15 @@ function roomItem(r){
   const isAI=r.room_type==='ai';
   let name,color,online,img,roomImg=null;
   if(r.avatar_img&&isGrp){roomImg=r.avatar_img;}
-  if(isAI){name='<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSIzIiB5PSI5IiB3aWR0aD0iMTgiIGhlaWdodD0iMTIiIHJ4PSIyIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0iTTkgOVY3QzkgNS4zNDMxNSAxMC4zNDMxIDQgMTIgNEMxMy42NTY5IDQgMTUgNS4zNDMxNSAxNSA3VjkiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjcpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjkiIGN5PSIxNCIgcj0iMS41IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNykiLz4KICA8Y2lyY2xlIGN4PSIxNSIgY3k9IjE0IiByPSIxLjUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIvPgogIDxwYXRoIGQ9Ik05IDE4SDE1IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMTIgNFYyIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNNCAxM0gyIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0yMiAxM0gyMCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNykiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> ИИ Ассистент';color='#00B894';online=true;img=null;}
+  if(isAI){name='ИИ Ассистент';color='#00B894';online=true;img=null;}
   else if(!isGrp){
     const o=r.members.find(m=>m.id!==S.me.id)||r.members[0];
     name=o?dn(o):'Чат';color=o?(o.avatar_color||'#5288c1'):'#5288c1';online=o?o.is_online:false;img=o?o.avatar_img:null;
   } else{name=r.name||'Группа';color='#5288c1';online=false;img=null;}
   const dot=online?'<div class="dot"></div>':'';
-  const avStyle=roomImg?`background-image:url(${roomImg});background-size:cover;background-position:center`:(img?`background-image:url(${img});background-size:cover;background-position:center`:`background:${color}`);
-  const avTxt=(roomImg||img)?'':ini(name);
+  const aiAvContent='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="9" cy="16" r="1.5" fill="rgba(255,255,255,.85)" stroke="none"/><circle cx="15" cy="16" r="1.5" fill="rgba(255,255,255,.85)" stroke="none"/></svg>';
+  const avStyle=isAI?`background:${color}`:(roomImg?`background-image:url(${roomImg});background-size:cover;background-position:center`:(img?`background-image:url(${img});background-size:cover;background-position:center`:`background:${color}`));
+  const avTxt=isAI?aiAvContent:((roomImg||img)?'':ini(name));
   const badge=r.unread_count>0?`<div class="badge">${r.unread_count>99?'99+':r.unread_count}</div>`:'';
   const last=r.last_message;
   let prev='Нет сообщений',prevIco='';
@@ -1467,7 +1469,7 @@ function updChatHead(){
   const rt=room.room_type;
   let name,color,sub,img=null;
   const isGrp=rt==='group'||rt==='channel';
-  if(rt==='ai'){name='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="5" r="1" fill="currentColor"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/><line x1="12" y1="16" x2="12" y2="16"/></svg> ИИ Ассистент';color='#00B894';sub='Искусственный интеллект';}
+  if(rt==='ai'){name='ИИ Ассистент';color='#00B894';sub='Искусственный интеллект';}
   else if(!isGrp){
     const o=room.members.find(m=>m.id!==S.me.id)||room.members[0];
     name=o?dn(o):'Чат';color=o?(o.avatar_color||'#5288c1'):'#5288c1';img=o?o.avatar_img:null;
@@ -1479,8 +1481,10 @@ function updChatHead(){
   const roomAv=isGrp?room.avatar_img:null;
   if(roomAv){av.style.backgroundImage=`url(${roomAv})`;av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.style.background='';av.textContent='';}
   else if(img){av.style.backgroundImage=`url(${img})`;av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.style.background='';av.textContent='';}
+  else if(rt==='ai'){av.style.backgroundImage='';av.style.background=color;av.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="9" cy="16" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="16" r="1.5" fill="white" stroke="none"/></svg>';}
   else{av.style.backgroundImage='';av.style.background=color;av.textContent=ini(name);}
-  document.getElementById('ch-name').innerHTML=esc(name)+(rt==='channel'?'<span style="font-size:12px;color:var(--t3);margin-left:6px"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMyAxMUwyMiAyTDEzIDIxTDExIDEzTDMgMTFaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC40KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="12" height="12" style="display:inline-block;vertical-align:middle" alt=""> Канал</span>':rt==='ai'?'':'');
+  const aiSvg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="9" cy="16" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="16" r="1" fill="currentColor" stroke="none"/></svg>';
+  document.getElementById('ch-name').innerHTML=(rt==='ai'?aiSvg:'')+esc(name)+(rt==='channel'?'<span style="font-size:12px;color:var(--t3);margin-left:6px"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMyAxMUwyMiAyTDEzIDIxTDExIDEzTDMgMTFaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC40KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="12" height="12" style="display:inline-block;vertical-align:middle" alt=""> Канал</span>':'');
   const se=document.getElementById('ch-sub');
   se.textContent=sub;se.className='chd-sub'+(sub==='онлайн'||sub==='Искусственный интеллект'?' online':'');
   // Call buttons — only for direct chats
