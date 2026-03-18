@@ -36,7 +36,9 @@ YADISK_FOLDER   = os.getenv("YADISK_FOLDER", "messenger")
 # ── VAPID Push ────────────────────────────────────────────────
 VAPID_PRIVATE   = os.getenv("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC    = os.getenv("VAPID_PUBLIC_KEY", "")
-VAPID_EMAIL     = os.getenv("VAPID_EMAIL", "mailto:admin@messenger.app")
+VAPID_EMAIL     = os.getenv("VAPID_EMAIL", "") or "mailto:admin@messenger.app"
+if not VAPID_EMAIL.startswith("mailto:"):
+    VAPID_EMAIL = f"mailto:{VAPID_EMAIL}"
 
 def _ensure_vapid():
     global VAPID_PRIVATE, VAPID_PUBLIC
