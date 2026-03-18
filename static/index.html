@@ -711,7 +711,7 @@ textarea.fi{resize:none}
       </div>
       <div class="iarea" id="iarea">
         <div class="attach-menu hidden" id="attach-menu">
-          <div class="am-item" onclick="trigFile('image/*')"><svg width="20" height="20" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div class="am-item" onclick="trigFile('image/*,video/*')"><svg width="20" height="20" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
   <circle cx="8.5" cy="8.5" r="1.5" fill="rgba(255,255,255,0.8)"/>
   <polyline points="21 15 16 10 5 21" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1118,12 +1118,16 @@ async function httpForm(p,fd){
   return r.json();
 }
 function esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s||''));return d.innerHTML;}
-function fmtTime(iso){return new Date(iso).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});}
+function fmtTime(iso){return new Date(iso).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'});}
 function fmtDate(iso){
-  const d=new Date(iso),t=new Date(),y=new Date(t);y.setDate(y.getDate()-1);
-  if(d.toDateString()===t.toDateString()) return 'Сегодня';
-  if(d.toDateString()===y.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru',{day:'numeric',month:'long'});
+  const tz='Europe/Moscow';
+  const d=new Date(iso);
+  const ds=d.toLocaleDateString('ru',{timeZone:tz});
+  const ts=new Date().toLocaleDateString('ru',{timeZone:tz});
+  const ys=new Date(Date.now()-86400000).toLocaleDateString('ru',{timeZone:tz});
+  if(ds===ts) return 'Сегодня';
+  if(ds===ys) return 'Вчера';
+  return d.toLocaleDateString('ru',{day:'numeric',month:'long',timeZone:tz});
 }
 function fmtSz(b){if(!b)return '';if(b<1024)return b+'Б';if(b<1048576)return (b/1024).toFixed(1)+'КБ';return (b/1048576).toFixed(1)+'МБ';}
 function fmtDur(s){return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;}
@@ -2188,7 +2192,7 @@ function stopRingtone(){clearInterval(ringtoneInt);}
 function findUserById(uid){for(const r of S.rooms){const m=r.members.find(m=>m.id===uid);if(m)return m;}return null;}
 
 /* ════ DOWNLOAD / LIGHTBOX ════════════════════════ */
-function dlFile(src,name){const a=document.createElement('a');a.href=src;a.download=name;a.click();}
+function dlFile(src,name){if(src.startsWith('data:')){const a=document.createElement('a');a.href=src;a.download=name;a.click();}else{window.open(src,'_blank');}}
 function openLB(src){document.getElementById('lb-img').src=src;document.getElementById('lb').classList.add('show');}
 function closeLB(){document.getElementById('lb').classList.remove('show');}
 
