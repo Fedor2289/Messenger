@@ -543,21 +543,50 @@ async def get_media_url(msg_id:int, token:str=Query(...), db:Session=Depends(get
 
 @app.get("/api/media/{msg_id}")
 async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Session=Depends(get_db)):
-    """Редирект на файл (для скачивания и совместимости)."""
-    from fastapi.responses import RedirectResponse, Response
+    """Отдаёт медиафайл. Аудио/видео — стрим через сервер (нужен для браузера). Изображения — редирект."""
+    from fastapi.responses import RedirectResponse, Response, StreamingResponse
+    from starlette.requests import Request
     auth(token,db)
     msg=db.get(models.Message,msg_id)
     if not msg or not msg.media_data: raise HTTPException(404,"Медиа не найдено")
+
+    mime = msg.media_mime or "application/octet-stream"
+
     if msg.media_data.startswith("yadisk:"):
         public_key=msg.media_data[7:]
         download_url=await yadisk_get_download_url(public_key)
         if not download_url: raise HTTPException(503,"Не удалось получить файл с Яндекс Диска")
+
+        # Аудио и видео — стримим через сервер, иначе браузер не сможет воспроизвести
+        if mime.startswith("audio/") or mime.startswith("video/"):
+            try:
+                async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
+                    r = await c.get(download_url)
+                    if r.status_code != 200:
+                        raise HTTPException(502,"Ошибка получения файла")
+                    fname = msg.content or "file"
+                    return Response(
+                        content=r.content,
+                        media_type=mime,
+                        headers={
+                            "Content-Disposition": f'inline; filename="{fname}"',
+                            "Accept-Ranges": "bytes",
+                            "Cache-Control": "public, max-age=3600",
+                            "Access-Control-Allow-Origin": "*",
+                        }
+                    )
+            except HTTPException: raise
+            except Exception as e:
+                logger.error(f"Media stream error: {e}")
+                raise HTTPException(502,"Ошибка получения файла")
+
+        # Изображения и файлы — редирект, браузер загрузит сам
         return RedirectResponse(url=download_url, status_code=302)
     else:
         raw=base64.b64decode(msg.media_data)
         fname = msg.content or "file"
         disposition = "attachment" if dl else "inline"
-        return Response(content=raw, media_type=msg.media_mime or "application/octet-stream",
+        return Response(content=raw, media_type=mime,
                         headers={"Content-Disposition": f'{disposition}; filename="{fname}"'})
 
 # Reactions
