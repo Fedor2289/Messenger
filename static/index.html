@@ -1311,12 +1311,24 @@ function handleWS(d){
 }
 
 function onWsMsg(msg){
+  if(msg.msg_type==='ringtone') return;  // системное сообщение, скрываем
   const room=S.rooms.find(r=>r.id===msg.room_id);
   if(room){room.last_message=msg;if(S.roomId!==msg.room_id)room.unread_count=(room.unread_count||0)+1;S.rooms=[room,...S.rooms.filter(r=>r.id!==msg.room_id)];}
   else{loadRooms();return;}
   renderRooms();
   if(S.roomId===msg.room_id){appendMsg(msg);scrollBot();wsSend({type:'read',room_id:msg.room_id});}
-  else{playBeep();}
+  else{
+    playBeep();
+    // Браузерное уведомление если окно не в фокусе
+    const notifOn=localStorage.getItem('notif_enabled')!=='0';
+    if(notifOn&&document.hidden&&Notification.permission==='granted'&&msg.sender_id!==S.me.id){
+      const s=msg.sender;
+      const title=s?(s.display_name||s.username):'Новое сообщение';
+      const body=msg.msg_type==='text'?msg.content.slice(0,80):'📎 Медиафайл';
+      const n=new Notification(title,{body,icon:'/static/icon192.png',tag:'msg-'+msg.room_id});
+      n.onclick=()=>{window.focus();openRoom(msg.room_id);n.close();};
+    }
+  }
 }
 function onWsStatus(uid,online,ls){
   S.rooms.forEach(r=>r.members.forEach(m=>{if(m.id===uid){m.is_online=online;m.last_seen=ls;}}));
@@ -1644,6 +1656,7 @@ function buildMsgEl(msg,consec,isGrp){
 function buildContent(msg){
   if(msg.is_deleted) return '<div class="txt" style="font-style:italic;opacity:.6">[Сообщение удалено]</div>';
   const t=msg.msg_type;
+  if(t==='ringtone') return '';
   if(t==='sticker') return `<div class="sticker">${esc(msg.content)}</div>`;
   
   // Медиа-источник: base64 — data URL, yadisk — через /api/media/{id}
@@ -2141,6 +2154,13 @@ async function onCallOffer(d){
   if(caller)setAv(document.getElementById('ic-av'),caller);
   ic.classList.add('show');
   playRingtone();
+  // Браузерное уведомление если окно не в фокусе
+  if(document.hidden&&Notification.permission==='granted'){
+    const cname=caller?dn(caller):'Входящий звонок';
+    const ctype=d.call_type==='video'?'видеозвонок':'голосовой звонок';
+    const n=new Notification(`📞 Входящий ${ctype}`,{body:cname,icon:'/static/icon192.png',tag:'call',requireInteraction:true});
+    n.onclick=()=>{window.focus();n.close();};
+  }
 }
 async function acceptCall(){
   document.getElementById('incoming-call').classList.remove('show');
@@ -2420,7 +2440,14 @@ function applyTheme(v){
   else if(v==='blue'){r.setProperty('--bg0','#1a2c42');r.setProperty('--bg1','#1f3550');r.setProperty('--bg2','#253f60');}
   else{r.setProperty('--bg0','#0e1621');r.setProperty('--bg1','#17212b');r.setProperty('--bg2','#242f3d');}
 }
-function toggleNotif(on){localStorage.setItem('notif',on?'1':'0');}
+function toggleNotif(on){
+  localStorage.setItem('notif_enabled',on?'1':'0');
+  if(on&&Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{
+      if(p!=='granted') document.getElementById('notif-toggle').checked=false;
+    });
+  }
+}
 function toggleSound(on){localStorage.setItem('sound',on?'1':'0');}
 
 // Применяем настройки при загрузке
