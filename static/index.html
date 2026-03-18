@@ -1268,7 +1268,7 @@ function handleWS(d){
     case 'member_removed':
       if(d.room_id===S.roomId){const _mr=S.rooms.find(r=>r.id===d.room_id);
         if(_mr){_mr.members=_mr.members.filter(m=>m.id!==d.user_id);updChatHead();}}break;
-    case 'error': toast('⚠️ '+d.message,'err'); break;
+    case 'error': toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> '+d.message,'err'); break;
   }
 }
 
@@ -1317,7 +1317,7 @@ function onWsEdit(d){
 function onWsPin(d){
   if(d.room_id!==S.roomId) return;
   const mw=document.querySelector(`.mw[data-id="${d.message_id}"]`);
-  if(mw){const pin=mw.querySelector('.pin-ico');if(pin)pin.remove();if(d.is_pinned){const p=document.createElement('span');p.className='pin-ico';p.style.cssText='font-size:10px;color:var(--acc);margin-left:4px';p.textContent='📌';mw.querySelector('.mtime')?.after(p);}}
+  if(mw){const pin=mw.querySelector('.pin-ico');if(pin)pin.remove();if(d.is_pinned){const p=document.createElement('span');p.className='pin-ico';p.style.cssText='display:inline-flex;align-items:center;color:var(--acc);margin-left:4px';p.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>';mw.querySelector('.mtime')?.after(p);}}
   // Update pinned banner
   const room=S.rooms.find(r=>r.id===S.roomId);
   if(room){room.pinned_msg_id=d.is_pinned?d.message_id:null;updPinnedBanner(room);}
@@ -1369,11 +1369,11 @@ function roomItem(r){
   if(last&&!last.is_deleted){
     const t=last.msg_type;
     const pfx=last.sender_id===S.me.id?'Вы: ':'';
-    if(t==='image'||t==='gif')prevIco='🖼️';
-    else if(t==='file')prevIco='📄';
-    else if(t==='voice')prevIco='🎙️';
-    else if(t==='sticker')prevIco='😊';
-    else if(t==='video')prevIco='🎬';
+    if(t==='image'||t==='gif')prevIco='Фото';
+    else if(t==='file')prevIco='Файл';
+    else if(t==='voice')prevIco='Голосовое';
+    else if(t==='sticker')prevIco='Стикер';
+    else if(t==='video')prevIco='Видео';
     prev=esc((pfx+(prevIco?'':last.content)).substring(0,60));
   } else if(last&&last.is_deleted){prev='[удалено]';}
   const time=last?fmtTime(last.created_at):'';
@@ -1461,7 +1461,7 @@ function updChatHead(){
   const rt=room.room_type;
   let name,color,sub,img=null;
   const isGrp=rt==='group'||rt==='channel';
-  if(rt==='ai'){name='🤖 ИИ Ассистент';color='#00B894';sub='Искусственный интеллект';}
+  if(rt==='ai'){name='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="5" r="1" fill="currentColor"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/><line x1="12" y1="16" x2="12" y2="16"/></svg> ИИ Ассистент';color='#00B894';sub='Искусственный интеллект';}
   else if(!isGrp){
     const o=room.members.find(m=>m.id!==S.me.id)||room.members[0];
     name=o?dn(o):'Чат';color=o?o.avatar_color:'#5288c1';img=o?o.avatar_img:null;
@@ -1527,7 +1527,7 @@ function renderMsgs(msgs,prepend=false){
 
 function addLM(){
   const c=document.getElementById('msgs');const b=document.createElement('button');
-  b.className='load-more';b.textContent='⬆ Загрузить ещё';b.onclick=doLoadMore;
+  b.className='load-more';b.textContent='Загрузить ещё';b.onclick=doLoadMore;
   c.insertBefore(b,c.firstChild);
 }
 
@@ -1572,7 +1572,7 @@ function buildMsgEl(msg,consec,isGrp){
   const contentHtml=buildContent(msg);
   const rxnHtml=msg.reactions&&Object.keys(msg.reactions).length?`<div class="rxns">${buildRxnHTML(msg.reactions,msg.id)}</div>`:'';
   const tick=isOut?`<span class="tick ${msg.is_read?'read':''}">✓✓</span>`:'';
-  const pinIco=msg.is_pinned?'<span class="pin-ico" style="font-size:10px;color:var(--acc);margin-left:4px">📌</span>':'';
+  const pinIco=msg.is_pinned?'<span class="pin-ico" style="display:inline-flex;align-items:center;color:var(--acc);margin-left:4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg></span>':'';
   const editIco=msg.edited_at?'<span class="edited" style="font-size:10px;color:rgba(255,255,255,.3);font-style:italic">ред.</span>':'';
   const bblClass=`bbl${msg.is_deleted?' deleted':''}${isAI?' ai-bbl':''}`;
   const replyHtml=msg.reply_to&&!msg.is_deleted?`<div class="reply-preview" onclick="scrollToMsg(${msg.reply_to.id})"><div class="reply-preview-sndr">${esc(msg.reply_to.sender?dn(msg.reply_to.sender):'Сообщение')}</div><div class="reply-preview-txt">${esc(msg.reply_to.content||'').substring(0,80)}</div></div>`:'';
@@ -1616,12 +1616,12 @@ function buildContent(msg){
   if(t==='gif'){const src=mediaSrc();return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;}
   if(t==='video'){const src=mediaSrc();return `<video controls style="max-width:280px;border-radius:10px;display:block">${'<source src="'+src+'" type="'+msg.media_mime+'">'}</video>`;}
   if(t==='voice'){const src=mediaSrc();const wid='vp-'+msg.id;
-    return `<div class="vp"><button class="vp-btn" onclick="vpToggle('${wid}','${src}')">▶</button><div class="vp-track"><div class="vp-waves">${Array(18).fill(0).map((_,i)=>`<div class="vp-wave" style="height:${4+Math.abs(Math.sin(i*0.7))*14}px"></div>`).join('')}</div><div class="vp-bar" onclick="vpSeek(event,'${wid}')"><div class="vp-prog" id="prog-${wid}"></div></div><div class="vp-times"><span id="cur-${wid}">0:00</span><span id="dur-${wid}">—</span></div></div><audio id="${wid}" src="${src}" onended="vpEnd('${wid}')" ontimeupdate="vpTick('${wid}')" onloadedmetadata="vpMeta('${wid}')"></audio></div>`;}
+    return `<div class="vp"><button class="vp-btn" onclick="vpToggle('${wid}','${src}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="vp-track"><div class="vp-waves">${Array(18).fill(0).map((_,i)=>`<div class="vp-wave" style="height:${4+Math.abs(Math.sin(i*0.7))*14}px"></div>`).join('')}</div><div class="vp-bar" onclick="vpSeek(event,'${wid}')"><div class="vp-prog" id="prog-${wid}"></div></div><div class="vp-times"><span id="cur-${wid}">0:00</span><span id="dur-${wid}">—</span></div></div><audio id="${wid}" src="${src}" onended="vpEnd('${wid}')" ontimeupdate="vpTick('${wid}')" onloadedmetadata="vpMeta('${wid}')"></audio></div>`;}
   if(t==='file'){
     const dlUrl=msg.media_data&&msg.media_data.startsWith('yadisk:')
       ?`${API}/api/media/${msg.id}?token=${S.token}&dl=1`
       :`data:${msg.media_mime||'application/octet-stream'};base64,${msg.media_data}`;
-    return `<div class="msg-file"><div class="mf-ico">📄</div><div class="mf-info"><div class="mf-name">${esc(msg.content)}</div><div class="mf-size">${fmtSz(msg.media_size)}</div><div class="mf-dl" onclick="dlFile('${dlUrl}','${esc(msg.content)}')">⬇ Скачать</div></div></div>`;}
+    return `<div class="msg-file"><div class="mf-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="mf-info"><div class="mf-name">${esc(msg.content)}</div><div class="mf-size">${fmtSz(msg.media_size)}</div><div class="mf-dl" onclick="dlFile('${dlUrl}','${esc(msg.content)}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Скачать</div></div></div>`;}
   // GIF from URL (Giphy/Tenor)
   if(t==='gif_url') return `<img class="msg-gif" src="${esc(msg.content)}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;
   return `<div class="txt">${esc(msg.content)}</div>`;
@@ -1719,7 +1719,7 @@ async function sendMsg(){
   const txt=ta.value.trim();
   if(!txt||!S.roomId) return;
   if(txt.length>4096){toast('Сообщение слишком длинное','err');return;}
-  if(!S.ws||S.ws.readyState!==WebSocket.OPEN){toast('⚠️ Нет соединения');connectWS();return;}
+  if(!S.ws||S.ws.readyState!==WebSocket.OPEN){toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Нет соединения');connectWS();return;}
 
   // Edit mode
   if(S.editMsgId){
@@ -1785,7 +1785,7 @@ function sendGifUrl(url){
   if(!S.roomId||!S.ws||S.ws.readyState!==WebSocket.OPEN){toast('Нет соединения','err');return;}
   wsSend({type:'message',room_id:S.roomId,content:url,msg_type_hint:'gif_url',reply_to_id:S.replyTo?.id||null});
   closeAttach();cancelReply();
-  toast('GIF отправлен! 🎬','ok');
+  toast('GIF отправлен!','ok');
 }
 
 /* ════ ATTACH / FILE ══════════════════════════════ */
@@ -1806,7 +1806,7 @@ async function handleFile(input){
   if(file.size>15*1024*1024){toast('Файл слишком большой (макс. 15 МБ)','err');return;}
   const fd=new FormData();fd.append('file',file);
   if(S.replyTo) fd.append('reply_to_id',S.replyTo.id);
-  toast('⬆️ Загрузка...');
+  toast('Загрузка...');
   try{await httpForm(`/api/rooms/${S.roomId}/upload`,fd);cancelReply();}catch(e){toast(e.message,'err');}
 }
 
@@ -1844,10 +1844,10 @@ async function sendVoice(){
 function vpToggle(wid,src){
   const a=document.getElementById(wid);if(!a)return;
   const btn=a.closest('.vp')?.querySelector('.vp-btn');if(!btn)return;
-  if(a.paused){a.play().catch(()=>{});btn.textContent='⏸';}
-  else{a.pause();btn.textContent='▶';}
+  if(a.paused){a.play().catch(()=>{});btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';}
+  else{a.pause();btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';}
 }
-function vpEnd(wid){document.getElementById(wid).parentElement.querySelector('.vp-btn').textContent='▶';document.getElementById(`prog-${wid}`).style.width='0%';document.getElementById(`cur-${wid}`).textContent='0:00';}
+function vpEnd(wid){document.getElementById(wid).parentElement.querySelector('.vp-btn').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';document.getElementById(`prog-${wid}`).style.width='0%';document.getElementById(`cur-${wid}`).textContent='0:00';}
 function vpTick(wid){const a=document.getElementById(wid);if(!a.duration)return;document.getElementById(`prog-${wid}`).style.width=(a.currentTime/a.duration*100)+'%';document.getElementById(`cur-${wid}`).textContent=fmtDur(Math.floor(a.currentTime));}
 function vpMeta(wid){document.getElementById(`dur-${wid}`).textContent=fmtDur(Math.floor(document.getElementById(wid).duration||0));}
 function vpSeek(e,wid){const a=document.getElementById(wid);if(!a.duration)return;a.currentTime=(e.offsetX/e.currentTarget.offsetWidth)*a.duration;}
@@ -1914,7 +1914,7 @@ async function loadChannelsList(q){
     document.getElementById('channels-list').innerHTML=data.map(c=>`
       <div class="ur">
         <div class="av av40" style="background:var(--acc)">${ini(c.name)}</div>
-        <div class="uri"><div class="urn">📢 ${esc(c.name)}</div><div class="ust">${c.description?esc(c.description.substring(0,50)):'Нет описания'} · ${c.members_count} подписчиков</div></div>
+        <div class="uri"><div class="urn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35z"/></svg> ${esc(c.name)}</div><div class="ust">${c.description?esc(c.description.substring(0,50)):'Нет описания'} · ${c.members_count} подписчиков</div></div>
         ${myIds.includes(c.id)?'<span style="color:var(--grn);font-size:12px">✓ Вы</span>':`<button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="joinChannel(${c.id})">Подписаться</button>`}
       </div>`).join('')||'<div class="no-chats">Нет каналов</div>';
   }catch(e){document.getElementById('channels-list').innerHTML=`<div style="color:var(--t3)">${esc(e.message)}</div>`;}
@@ -2030,7 +2030,7 @@ async function onCallOffer(d){
   const caller=findUserById(d.caller_id);
   const ic=document.getElementById('incoming-call');
   document.getElementById('ic-name').textContent=caller?dn(caller):`User ${d.caller_id}`;
-  document.getElementById('ic-type').textContent=d.call_type==='video'?'📹 Входящий видеозвонок':'📞 Входящий звонок';
+  document.getElementById('ic-type').textContent=d.call_type==='video'?'Входящий видеозвонок':'Входящий звонок';
   if(caller)setAv(document.getElementById('ic-av'),caller);
   ic.classList.add('show');
   playRingtone();
@@ -2109,17 +2109,21 @@ function startCallTimer(){
   const el=document.getElementById('call-timer');el.classList.remove('hidden');
   S.callTimer=setInterval(()=>{S.callSec++;el.textContent=fmtDur(S.callSec);},1000);
 }
+const SVG_MIC_ON=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C10.9 2 10 2.9 10 4V12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12V4C14 2.9 13.1 2 12 2Z" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M19 10V12C19 15.866 15.866 19 12 19C8.13401 19 5 15.866 5 12V10" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
+const SVG_MIC_OFF=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C10.9 2 10 2.9 10 4V12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12V4C14 2.9 13.1 2 12 2Z" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M19 10V12C19 15.866 15.866 19 12 19C8.13401 19 5 15.866 5 12V10" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="3" x2="21" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
+const SVG_CAM_ON=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="23 7 16 12 23 17 23 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const SVG_CAM_OFF=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="23 7 16 12 23 17 23 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="3" x2="21" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
 function toggleMute(){
   S.isMuted=!S.isMuted;
   S.localStream?.getAudioTracks().forEach(t=>t.enabled=!S.isMuted);
   const btn=document.getElementById('call-mute-btn');
-  btn.textContent=S.isMuted?'🔇':'🎙️';btn.classList.toggle('on',S.isMuted);
+  btn.innerHTML=S.isMuted?SVG_MIC_OFF:SVG_MIC_ON;btn.classList.toggle('on',S.isMuted);
 }
 function toggleVideo(){
   S.isVideoOff=!S.isVideoOff;
   S.localStream?.getVideoTracks().forEach(t=>t.enabled=!S.isVideoOff);
   const btn=document.getElementById('call-vid-btn');btn.classList.toggle('on',S.isVideoOff);
-  btn.textContent=S.isVideoOff?'📷':'📷';
+  btn.innerHTML=S.isVideoOff?SVG_CAM_OFF:SVG_CAM_ON;
 }
 
 let ringtoneInt=null;
@@ -2223,11 +2227,11 @@ function renderAdmUsers(users){
       <div class="av av32" style="background:${u.avatar_color}">${ini(u.display_name||u.username)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600">${esc(u.display_name||u.username)}</div>
-        <div style="font-size:11px;color:var(--t3)">@${esc(u.username)} · ${u.is_online?'🟢 онлайн':'⚫ оффлайн'}</div>
+        <div style="font-size:11px;color:var(--t3)">@${esc(u.username)} · ${u.is_online?'● онлайн':'○ оффлайн'}</div>
       </div>
       <div class="adm-actions">
-        <button class="ib" title="Написать" onclick="admWriteTo(${u.id},'${esc(u.username)}')">✉️</button>
-        <button class="ib danger" title="Удалить" onclick="admDelUser(${u.id},'${esc(u.username)}')">🗑️</button>
+        <button class="ib" title="Написать" onclick="admWriteTo(${u.id},'${esc(u.username)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></button>
+        <button class="ib danger" title="Удалить" onclick="admDelUser(${u.id},'${esc(u.username)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </div>
     </div>`).join('');
 }
@@ -2297,7 +2301,7 @@ async function loadMngMembers(){
       <div class="uri"><div class="urn">${esc(dn(m))} ${m.is_admin?'<span style="color:var(--acc);font-size:11px">admin</span>':''}${m.id===S.me.id?' <span style="color:var(--t3);font-size:11px">(вы)</span>':''}</div>
         <div class="ust ${m.is_online?'on':''}">${m.is_online?'онлайн':'оффлайн'}</div></div>
       ${amAdmin&&m.id!==S.me.id?`<div style="display:flex;gap:2px">
-        <button class="ib" title="${m.is_admin?'Снять':'Назначить'} админа" onclick="toggleMbrAdmin(${m.id})">${m.is_admin?'👑':'⬆'}</button>
+        <button class="ib" title="${m.is_admin?'Снять':'Назначить'} админа" onclick="toggleMbrAdmin(${m.id})">${m.is_admin?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M4 20l2-8 6 4 6-4 2 8"/><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 17 5.5 21 7.5 13.5 2 9 9 9"/></svg>':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>'}</button>
         <button class="ib danger" title="Исключить" onclick="kickMember(${m.id},'${esc(dn(m))}')">✕</button>
       </div>`:''}
     </div>`).join('');
