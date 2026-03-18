@@ -1626,12 +1626,12 @@ function buildContent(msg){
   if(t==='image'){
     const src=mediaSrc();
     if(src) return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="${esc(msg.content)}">`;
-    return `<img class="msg-img" data-mid="${_mid}" alt="${esc(msg.content)}" style="min-width:100px;min-height:80px;background:var(--bg3);display:block" onload="this.style.background=''" onerror="this.style.background='var(--bg3)'">`;
+    return `<img class="msg-img" data-mid="${_mid}" alt="${esc(msg.content)}" style="min-width:100px;min-height:80px;background:var(--bg3);display:block">`;
   }
   if(t==='gif'){
     const src=mediaSrc();
     if(src) return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;
-    return `<img class="msg-gif" data-mid="${_mid}" alt="GIF" style="min-width:100px;min-height:80px;background:var(--bg3);display:block" onload="this.style.background=''" onerror="this.style.background='var(--bg3)'">`;
+    return `<img class="msg-gif" data-mid="${_mid}" alt="GIF" style="min-width:100px;min-height:80px;background:var(--bg3);display:block">`;
   }
   if(t==='video'){
     const src=mediaSrc();
@@ -1872,9 +1872,10 @@ async function sendVoice(){
 // Кэш прямых ссылок (живут ~1 час у Яндекса)
 const _mediaUrlCache={};
 async function _getMediaUrl(msgId){
-  if(_mediaUrlCache[msgId]) return _mediaUrlCache[msgId];
-  const r=await http('GET',`/api/media/${msgId}/url`);
-  _mediaUrlCache[msgId]=r.url;
+  const key=String(msgId);
+  if(_mediaUrlCache[key]) return _mediaUrlCache[key];
+  const r=await http('GET',`/api/media/${key}/url`);
+  _mediaUrlCache[key]=r.url;
   return r.url;
 }
 async function vpToggle(wid,msgId,hasLocalSrc='0'){
@@ -1905,14 +1906,14 @@ async function loadMediaImg(el,msgId){
 function autoLoadMedia(container){
   container.querySelectorAll('img[data-mid]').forEach(img=>{
     const mid=img.dataset.mid;
-    // img.src никогда не пустой в браузере — проверяем getAttribute
-    if(!mid||img.getAttribute('src')) return;
-    _getMediaUrl(mid).then(url=>{
+    if(!mid||img.dataset.loaded) return;
+    img.dataset.loaded='1';  // флаг чтобы не грузить дважды
+    _getMediaUrl(String(mid)).then(url=>{
       img.src=url;
       img.style.background='';
       img.onclick=()=>openLB(url);
       img.style.cursor='pointer';
-    }).catch(()=>{img.alt='Ошибка';});
+    }).catch(()=>{img.alt='Ошибка загрузки';img.style.background='var(--bg3)';});
   });
 }
 async function loadVideoEl(el){
