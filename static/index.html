@@ -471,6 +471,28 @@ textarea.fi{resize:none}
   border-bottom:1px solid var(--brd)}
 .adm-user-row:last-child{border-bottom:none}
 .adm-actions{display:flex;gap:4px;margin-left:auto}
+
+/* ── OVERFLOW FIXES ── */
+.bbl{overflow:hidden;word-break:break-word}
+.ci-name,.urn,.chd-name,.my-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ci-info{min-width:0;flex:1}
+.ur{max-width:100%}
+.msgs .bbl{max-width:min(68%, 500px)}
+@media(max-width:768px){.msgs .bbl{max-width:82%}}
+.modal{overflow:hidden}
+.modal .mbody{overflow-y:auto}
+.iarea{flex-shrink:0}
+.sp,.gif-panel,.attach-menu{max-height:calc(100vh - 150px);overflow-y:auto}
+
+/* ── AVATAR в группах ── */
+.room-av-wrap{position:relative;cursor:pointer;display:inline-block}
+.room-av-edit{position:absolute;bottom:0;right:0;width:20px;height:20px;background:var(--acc);
+  border-radius:50%;border:2px solid var(--bg1);display:flex;align-items:center;justify-content:center;font-size:10px}
+
+/* ── ADMIN TAG ── */
+.admin-tag{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;
+  font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px}
+
 .spinner{width:22px;height:22px;border:2.5px solid rgba(255,255,255,.15);
   border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;margin:auto}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -566,7 +588,7 @@ textarea.fi{resize:none}
 </svg></button>
     </div>
     <div class="srch"><div class="srin">
-      <span class="sico">🔍</span>
+      <span class="sico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""></span>
       <input class="si" id="sb-srch" type="text" placeholder="Поиск..." oninput="filterSB(this.value)">
     </div></div>
     <div class="sb-tabs">
@@ -574,7 +596,7 @@ textarea.fi{resize:none}
       <button class="sb-tab" onclick="swSBTab('channels')">Каналы</button>
     </div>
     <div class="chatlist" id="chatlist">
-      <div class="no-chats"><div class="ico">💬</div>Нажмите ✏️ чтобы начать</div>
+      <div class="no-chats"><div class="ico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTcgMjFWMTlDMTcgMTcuOTM5MSAxNi41Nzg2IDE2LjkyMTcgMTUuODI4NCAxNi4xNzE2QzE1LjA3ODMgMTUuNDIxNCAxNC4wNjA5IDE1IDEzIDE1SDVDMy45MzkxMyAxNSAyLjkyMTcyIDE1LjQyMTQgMi4xNzE1NyAxNi4xNzE2QzEuNDIxNDMgMTYuOTIxNyAxIDE3LjkzOTEgMSAxOVYyMSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iOSIgY3k9IjciIHI9IjQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJNMjMgMjFWMTlDMjIuOTk5MyAxOC4xMTM3IDIyLjcwNDQgMTcuMjUyOCAyMi4xNjE0IDE2LjU1MjNDMjEuNjE4NCAxNS44NTE5IDIwLjg1ODEgMTUuMzUxNiAyMCAxNS4xMyIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE2IDMuMTNDMTYuODYwNCAzLjM1MDMxIDE3LjYyMyAzLjg1MDcxIDE4LjE2NzYgNC41NTIzMkMxOC43MTIyIDUuMjUzOTIgMTkuMDA3OCA2LjExNjgzIDE5LjAwNzggNy4wMDVDMTkuMDA3OCA3Ljg5MzE3IDE4LjcxMjIgOC43NTYwOCAxOC4xNjc2IDkuNDU3NjlDMTcuNjIzIDEwLjE1OTMgMTYuODYwNCAxMC42NTk3IDE2IDEwLjg4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="40" height="40" style="display:inline-block;vertical-align:middle" alt=""></div>Нажмите для начала</div>
     </div>
     <div class="sbfoot">
       <button class="ib" title="Выйти" onclick="logout()"><svg width="18" height="18" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -588,7 +610,7 @@ textarea.fi{resize:none}
   <!-- CHAT AREA -->
   <div class="chat-area" id="chat-area">
     <div class="welcome" id="welcome">
-      <div class="ico">💬</div>
+      <div class="ico" style="opacity:.25"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTcgMjFWMTlDMTcgMTcuOTM5MSAxNi41Nzg2IDE2LjkyMTcgMTUuODI4NCAxNi4xNzE2QzE1LjA3ODMgMTUuNDIxNCAxNC4wNjA5IDE1IDEzIDE1SDVDMy45MzkxMyAxNSAyLjkyMTcyIDE1LjQyMTQgMi4xNzE1NyAxNi4xNzE2QzEuNDIxNDMgMTYuOTIxNyAxIDE3LjkzOTEgMSAxOVYyMSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8Y2lyY2xlIGN4PSI5IiBjeT0iNyIgcj0iNCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0iTTIzIDIxVjE5QzIyLjk5OTMgMTguMTEzNyAyMi43MDQ0IDE3LjI1MjggMjIuMTYxNCAxNi41NTIzQzIxLjYxODQgMTUuODUxOSAyMC44NTgxIDE1LjM1MTYgMjAgMTUuMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE2IDMuMTNDMTYuODYwNCAzLjM1MDMxIDE3LjYyMyAzLjg1MDcxIDE4LjE2NzYgNC41NTIzMkMxOC43MTIyIDUuMjUzOTIgMTkuMDA3OCA2LjExNjgzIDE5LjAwNzggNy4wMDVDMTkuMDA3OCA3Ljg5MzE3IDE4LjcxMjIgOC43NTYwOCAxOC4xNjc2IDkuNDU3NjlDMTcuNjIzIDEwLjE1OTMgMTYuODYwNCAxMC42NTk3IDE2IDEwLjg4IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="64" height="64" style="display:inline-block;vertical-align:middle" alt=""></div>
       <h3>Добро пожаловать!</h3>
       <p>Выберите чат или начните новый</p>
       <div class="welcome-btns">
@@ -631,6 +653,7 @@ textarea.fi{resize:none}
   <polygon points="23 7 16 12 23 17 23 7" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></button>
+          <button class="ib" id="edit-grp-btn" onclick="openEditRoom()" title="Редактировать" style="display:none"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTEgNEg0QzMuNDY5NTcgNCAyLjk2MDg2IDQuMjEwNzEgMi41ODU3OSA0LjU4NTc5QzIuMjEwNzEgNC45NjA4NiAyIDUuNDY5NTcgMiA2VjIwQzIgMjAuNTMwNCAyLjIxMDcxIDIxLjAzOTEgMi41ODU3OSAyMS40MTQyQzIuOTYwODYgMjEuNzg5MyAzLjQ2OTU3IDIyIDQgMjJIMThDMTguNTMwNCAyMiAxOS4wMzkxIDIxLjc4OTMgMTkuNDE0MiAyMS40MTQyQzE5Ljc4OTMgMjEuMDM5MSAyMCAyMC41MzA0IDIwIDIwVjEzIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNMTguNSAyLjVDMTguODk3OCAyLjEwMjE3IDE5LjQzNzQgMS44Nzg2OCAyMCAxLjg3ODY4QzIwLjU2MjYgMS44Nzg2OCAyMS4xMDIyIDIuMTAyMTcgMjEuNSAyLjVDMjEuODk3OCAyLjg5NzgyIDIyLjEyMTMgMy40MzczOSAyMi4xMjEzIDRDMjIuMTIxMyA0LjU2MjYxIDIxLjg5NzggNS4xMDIxNyAyMS41IDUuNUwxMiAxNUw4IDE2TDkgMTJMMTguNSAyLjVaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="18" height="18" style="display:inline-block;vertical-align:middle" alt=""></button>
           <button class="ib" id="del-grp-btn" onclick="deleteRoom()" title="Удалить" style="display:none"><svg width="18" height="18" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <polyline points="3 6 5 6 21 6" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M19 6L18.1327 20.1425C18.0579 21.1891 17.187 22 16.1378 22H7.86224C6.81296 22 5.94208 21.1891 5.86732 20.1425L5 6" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -643,7 +666,7 @@ textarea.fi{resize:none}
       <div class="pinned-banner hidden" id="pinned-banner" onclick="scrollToPinned()">
         <div class="pinned-bar"></div>
         <div class="pinned-info">
-          <div class="pinned-label">📌 Закреплено</div>
+          <div class="pinned-label"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8bGluZSB4MT0iMTIiIHkxPSIxNyIgeDI9IjEyIiB5Mj0iMjIiIHN0cm9rZT0iIzUyODhjMSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNNSAxN0gxOSIgc3Ryb2tlPSIjNTI4OGMxIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xNSA1SDlMNyAxMUwxNyAxMUwxNSA1WiIgc3Ryb2tlPSIjNTI4OGMxIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="12" height="12" style="display:inline-block;vertical-align:middle" alt=""> Закреплено</div>
           <div class="pinned-text" id="pinned-text">—</div>
         </div>
         <button class="ib" onclick="event.stopPropagation();hidePinnedBanner()" title="Скрыть"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -670,7 +693,7 @@ textarea.fi{resize:none}
 
       <!-- Channel readonly bar -->
       <div class="ch-join-bar hidden" id="ch-join-bar">
-        <span style="color:var(--t2);font-size:13px">📢 Только администраторы могут писать</span>
+        <span style="color:var(--t2);font-size:13px"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMyAxMUwyMiAyTDEzIDIxTDExIDEzTDMgMTFaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg==" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> Только администраторы могут писать</span>
         <button class="btn btn-ghost" onclick="subscribeChannel()">Подписаться</button>
       </div>
       <div class="voicerec hidden" id="voicerec">
@@ -693,7 +716,7 @@ textarea.fi{resize:none}
   <circle cx="8.5" cy="8.5" r="1.5" fill="rgba(255,255,255,0.8)"/>
   <polyline points="21 15 16 10 5 21" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>  Фото / Видео</div>
-          <div class="am-item" onclick="openGif()">🎬 GIF</div>
+          <div class="am-item" onclick="openGif()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSIyIiB5PSI2IiB3aWR0aD0iMjAiIGhlaWdodD0iMTIiIHJ4PSIyIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDx0ZXh0IHg9IjUiIHk9IjE2IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBmb250LXNpemU9IjgiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC13ZWlnaHQ9ImJvbGQiPkdJRjwvdGV4dD4KPC9zdmc+" width="20" height="20" style="display:inline-block;vertical-align:middle" alt=""> GIF</div>
           <div class="am-item" onclick="trigFile('*')"><svg width="20" height="20" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M13 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V9L13 2Z" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <polyline points="13 2 13 9 20 9" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -707,7 +730,7 @@ textarea.fi{resize:none}
         </div>
         <div class="sp hidden" id="sp-panel"></div>
         <div class="gif-panel hidden" id="gif-panel">
-          <input class="gif-search" id="gif-search" placeholder="🔍 Поиск GIF..." oninput="srchGif(this.value)" style="font-size:16px">
+          <input class="gif-search" id="gif-search" placeholder="⌕ Поиск GIF..." oninput="srchGif(this.value)" style="font-size:16px">
           <div class="gif-grid" id="gif-grid"><div class="gif-loading">Введите запрос для поиска GIF</div></div>
         </div>
         <input type="file" id="file-input" style="display:none" onchange="handleFile(this)">
@@ -748,14 +771,14 @@ textarea.fi{resize:none}
         <button class="mtab" onclick="swNCTab('channel')">Канал</button>
       </div>
       <div id="nc-direct">
-        <div class="srin"><span class="sico">🔍</span>
+        <div class="srin"><span class="sico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""></span>
           <input class="si" style="width:100%" id="nc-s" type="text"
                  placeholder="Найти пользователя..." oninput="srchU(this.value)"></div>
         <div class="ul" id="nc-ul"><div class="spinner" style="margin-top:20px"></div></div>
       </div>
       <div id="nc-group" class="hidden">
         <div class="fg"><label class="fl">Название группы</label><input class="fi" id="grp-name" type="text" placeholder="Название..."></div>
-        <div class="srin"><span class="sico">🔍</span>
+        <div class="srin"><span class="sico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""></span>
           <input class="si" style="width:100%" id="grp-s" type="text"
                  placeholder="Добавить участников..." oninput="srchGU(this.value)"></div>
         <div class="ul" id="grp-ul"></div>
@@ -765,7 +788,7 @@ textarea.fi{resize:none}
       <div id="nc-channel" class="hidden">
         <div class="fg"><label class="fl">Название канала</label><input class="fi" id="ch-name-in" type="text" placeholder="Мой канал..."></div>
         <div class="fg"><label class="fl">Описание (необязательно)</label><textarea class="fi" id="ch-desc" rows="2" placeholder="О чём этот канал..."></textarea></div>
-        <button class="btn btn-p btn-full" onclick="createChannel()">Создать канал 📢</button>
+        <button class="btn btn-p btn-full" onclick="createChannel()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMyAxMUwyMiAyTDEzIDIxTDExIDEzTDMgMTFaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg==" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> Создать канал</button>
       </div>
     </div>
   </div>
@@ -793,7 +816,7 @@ textarea.fi{resize:none}
       <div class="prof-av">
         <div class="prof-av-wrap" onclick="trigAv()">
           <div class="av av72" id="prof-av-el">?</div>
-          <div class="prof-av-overlay">📷</div>
+          <div class="prof-av-overlay"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMjMgMTlDMjMgMTkuNTMwNCAyMi43ODkzIDIwLjAzOTEgMjIuNDE0MiAyMC40MTQyQzIyLjAzOTEgMjAuNzg5MyAyMS41MzA0IDIxIDIxIDIxSDNDMi40Njk1NyAyMSAxLjk2MDg2IDIwLjc4OTMgMS41ODU3OSAyMC40MTQyQzEuMjEwNzEgMjAuMDM5MSAxIDE5LjUzMDQgMSAxOVY4QzEgNy40Njk1NyAxLjIxMDcxIDYuOTYwODYgMS41ODU3OSA2LjU4NTc5QzEuOTYwODYgNi4yMTA3MSAyLjQ2OTU3IDYgMyA2SDdMOSAzSDE1TDE3IDZIMjFDMjEuNTMwNCA2IDIyLjAzOTEgNi4yMTA3MSAyMi40MTQyIDYuNTg1NzlDMjIuNzg5MyA2Ljk2MDg2IDIzIDcuNDY5NTcgMjMgOFYxOVoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iMTIiIGN5PSIxMyIgcj0iNCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPg==" width="24" height="24" style="display:inline-block;vertical-align:middle" alt=""></div>
         </div>
         <div style="font-size:12px;color:var(--t2)">Нажмите для загрузки фото</div>
       </div>
@@ -818,7 +841,7 @@ textarea.fi{resize:none}
   <line x1="6" y1="6" x2="18" y2="18" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
 </svg></button></div>
     <div class="mbody">
-      <div class="srin" style="margin-bottom:12px"><span class="sico">🔍</span>
+      <div class="srin" style="margin-bottom:12px"><span class="sico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""></span>
         <input class="si" style="width:100%" id="ch-srch" type="text"
                placeholder="Поиск каналов..." oninput="srchChannels(this.value)"></div>
       <div id="channels-list"><div class="spinner"></div></div>
@@ -830,14 +853,14 @@ textarea.fi{resize:none}
 <!-- MODAL: SETTINGS -->
 <div class="ov" id="m-settings" onclick="closeOv(event,'m-settings')">
   <div class="modal">
-    <div class="mhd"><span class="mt">⚙️ Настройки</span><button class="ib" onclick="closeM('m-settings')"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div class="mhd"><span class="mt"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik0xOS40IDE1QzE5LjI2NjkgMTUuMzAxNiAxOS4yMjcyIDE1LjYzNjIgMTkuMjg2IDE1Ljk2MDZDMTkuMzQ0OCAxNi4yODUgMTkuNDk5NSAxNi41ODQzIDE5LjczIDE2LjgyTDE5Ljc5IDE2Ljg4QzE5Ljk3NiAxNy4wNjU3IDIwLjEyMzUgMTcuMjg2MyAyMC4yMjQxIDE3LjUyOTFDMjAuMzI0OCAxNy43NzE5IDIwLjM3NjYgMTguMDMyMiAyMC4zNzY2IDE4LjI5NUMyMC4zNzY2IDE4LjU1NzggMjAuMzI0OCAxOC44MTgxIDIwLjIyNDEgMTkuMDYwOUMyMC4xMjM1IDE5LjMwMzcgMTkuOTc2IDE5LjUyNDMgMTkuNzkgMTkuNzFDMTkuNjA0MyAxOS44OTYgMTkuMzgzNyAyMC4wNDM1IDE5LjE0MDkgMjAuMTQ0MUMxOC44OTgxIDIwLjI0NDggMTguNjM3OCAyMC4yOTY2IDE4LjM3NSAyMC4yOTY2QzE4LjExMjIgMjAuMjk2NiAxNy44NTE5IDIwLjI0NDggMTcuNjA5MSAyMC4xNDQxQzE3LjM2NjMgMjAuMDQzNSAxNy4xNDU3IDE5Ljg5NiAxNi45NiAxOS43MUwxNi45IDE5LjY1QzE2LjY2NDMgMTkuNDE5NSAxNi4zNjUgMTkuMjY0OCAxNi4wNDA2IDE5LjIwNkMxNS43MTYyIDE5LjE0NzIgMTUuMzgxNiAxOS4xODY5IDE1LjA4IDE5LjMyQzE0Ljc4NDIgMTkuNDQ2OCAxNC41MzIgMTkuNjU3MiAxNC4zNTQzIDE5LjkyNTVDMTQuMTc2NiAyMC4xOTM4IDE0LjA4MTMgMjAuNTA4MiAxNC4wOCAyMC44M1YyMUMxNC4wOCAyMS41MzA0IDEzLjg2OTMgMjIuMDM5MSAxMy40OTQyIDIyLjQxNDJDMTMuMTE5MSAyMi43ODkzIDEyLjYxMDQgMjMgMTIuMDggMjNDMTEuNTQ5NiAyMyAxMS4wNDA5IDIyLjc4OTMgMTAuNjY1OCAyMi40MTQyQzEwLjI5MDcgMjIuMDM5MSAxMC4wOCAyMS41MzA0IDEwLjA4IDIxVjIwLjkxQzEwLjA3MjMgMjAuNTc5IDkuOTY1MTIgMjAuMjU4IDkuNzcyNTEgMTkuOTg4N0M5LjU3OTkgMTkuNzE5NCA5LjMxMDc0IDE5LjUxNDMgOSAxOS40QzguNjk4MzggMTkuMjY2OSA4LjM2MzgxIDE5LjIyNzIgOC4wMzk0MSAxOS4yODZDNy43MTUwMiAxOS4zNDQ4IDcuNDE1NjggMTkuNDk5NSA3LjE4IDE5LjczTDcuMTIgMTkuNzlDNi45MzQyNSAxOS45NzYgNi43MTM2OCAyMC4xMjM1IDYuNDcwODggMjAuMjI0MUM2LjIyODA4IDIwLjMyNDggNS45Njc4MyAyMC4zNzY2IDUuNzA1IDIwLjM3NjZDNS40NDIxNyAyMC4zNzY2IDUuMTgxOTIgMjAuMzI0OCA0LjkzOTEyIDIwLjIyNDFDNC42OTYzMiAyMC4xMjM1IDQuNDc1NzUgMTkuOTc2IDQuMjkgMTkuNzlDNC4xMDQwNSAxOS42MDQzIDMuOTU2NTMgMTkuMzgzNyAzLjg1NTg4IDE5LjE0MDlDMy43NTUyMyAxOC44OTgxIDMuNzAzNDMgMTguNjM3OCAzLjcwMzQzIDE4LjM3NUMzLjcwMzQzIDE4LjExMjIgMy43NTUyMyAxNy44NTE5IDMuODU1ODggMTcuNjA5MUMzLjk1NjUzIDE3LjM2NjMgNC4xMDQwNSAxNy4xNDU3IDQuMjkgMTYuOTZMNC4zNSAxNi45QzQuNTgwNTQgMTYuNjY0MyA0LjczNTE5IDE2LjM2NSA0Ljc5NCAxNi4wNDA2QzQuODUyODIgMTUuNzE2MiA0LjgxMzEyIDE1LjM4MTYgNC42OCAxNS4wOEM0LjU1MzI0IDE0Ljc4NDIgNC4zNDI3NiAxNC41MzIgNC4wNzQ0NyAxNC4zNTQzQzMuODA2MTggMTQuMTc2NiAzLjQ5MTc5IDE0LjA4MTMgMy4xNyAxNC4wOEgzQzIuNDY5NTcgMTQuMDggMS45NjA4NiAxMy44NjkzIDEuNTg1NzkgMTMuNDk0MkMxLjIxMDcxIDEzLjExOTEgMSAxMi42MTA0IDEgMTIuMDhDMSAxMS41NDk2IDEuMjEwNzEgMTEuMDQwOSAxLjU4NTc5IDEwLjY2NThDMS45NjA4NiAxMC4yOTA3IDIuNDY5NTcgMTAuMDggMyAxMC4wOEgzLjA5QzMuNDIwOTkgMTAuMDcyMyAzLjc0MiA5Ljk2NTEyIDQuMDExMyA5Ljc3MjUxQzQuMjgwNTkgOS41Nzk5IDQuNDg1NzIgOS4zMTA3NCA0LjYgOUM0LjczMzEyIDguNjk4MzggNC43NzI4MiA4LjM2MzgxIDQuNzE0IDguMDM5NDFDNC42NTUxOSA3LjcxNTAyIDQuNTAwNTQgNy40MTU2OCA0LjI3IDcuMThMNC4yMSA3LjEyQzQuMDI0MDUgNi45MzQyNSAzLjg3NjUzIDYuNzEzNjggMy43NzU4OCA2LjQ3MDg4QzMuNjc1MjMgNi4yMjgwOCAzLjYyMzQzIDUuOTY3ODMgMy42MjM0MyA1LjcwNUMzLjYyMzQzIDUuNDQyMTcgMy42NzUyMyA1LjE4MTkyIDMuNzc1ODggNC45MzkxMkMzLjg3NjUzIDQuNjk2MzIgNC4wMjQwNSA0LjQ3NTc1IDQuMjEgNC4yOUM0LjM5NTc1IDQuMTA0MDUgNC42MTYzMiAzLjk1NjUzIDQuODU5MTIgMy44NTU4OEM1LjEwMTkyIDMuNzU1MjMgNS4zNjIxNyAzLjcwMzQzIDUuNjI1IDMuNzAzNDNDNS44ODc4MyAzLjcwMzQzIDYuMTQ4MDggMy43NTUyMyA2LjM5MDg4IDMuODU1ODhDNi42MzM2OCAzLjk1NjUzIDYuODU0MjUgNC4xMDQwNSA3LjA0IDQuMjlMNy4xIDQuMzVDNy4zMzU2OCA0LjU4MDU0IDcuNjM1MDIgNC43MzUxOSA3Ljk1OTQxIDQuNzk0QzguMjgzODEgNC44NTI4MiA4LjYxODM4IDQuODEzMTIgOC45MiA0LjY4SDlDOS4yOTU3NyA0LjU1MzI0IDkuNTQ4MDIgNC4zNDI3NiA5LjcyNTY5IDQuMDc0NDdDOS45MDMzNyAzLjgwNjE4IDkuOTk4NzIgMy40OTE3OSAxMCAzLjE3VjNDMTAgMi40Njk1NyAxMC4yMTA3IDEuOTYwODYgMTAuNTg1OCAxLjU4NTc5QzEwLjk2MDkgMS4yMTA3MSAxMS40Njk2IDEgMTIgMUMxMi41MzA0IDEgMTMuMDM5MSAxLjIxMDcxIDEzLjQxNDIgMS41ODU3OUMxMy43ODkzIDEuOTYwODYgMTQgMi40Njk1NyAxNCAzVjMuMDlDMTQuMDAxMyAzLjQxMTc5IDE0LjA5NjYgMy43MjYxOCAxNC4yNzQzIDMuOTk0NDdDMTQuNDUyIDQuMjYyNzYgMTQuNzA0MiA0LjQ3MzI0IDE1IDQuNkMxNS4zMDE2IDQuNzMzMTIgMTUuNjM2MiA0Ljc3MjgyIDE1Ljk2MDYgNC43MTRDMTYuMjg1IDQuNjU1MTkgMTYuNTg0MyA0LjUwMDU0IDE2LjgyIDQuMjdMMTYuODggNC4yMUMxNy4wNjU3IDQuMDI0MDUgMTcuMjg2MyAzLjg3NjUzIDE3LjUyOTEgMy43NzU4OEMxNy43NzE5IDMuNjc1MjMgMTguMDMyMiAzLjYyMzQzIDE4LjI5NSAzLjYyMzQzQzE4LjU1NzggMy42MjM0MyAxOC44MTgxIDMuNjc1MjMgMTkuMDYwOSAzLjc3NTg4QzE5LjMwMzcgMy44NzY1MyAxOS41MjQzIDQuMDI0MDUgMTkuNzEgNC4yMUMxOS44OTYgNC4zOTU3NSAyMC4wNDM1IDQuNjE2MzIgMjAuMTQ0MSA0Ljg1OTEyQzIwLjI0NDggNS4xMDE5MiAyMC4yOTY2IDUuMzYyMTcgMjAuMjk2NiA1LjYyNUMyMC4yOTY2IDUuODg3ODMgMjAuMjQ0OCA2LjE0ODA4IDIwLjE0NDEgNi4zOTA4OEMyMC4wNDM1IDYuNjMzNjggMTkuODk2IDYuODU0MjUgMTkuNzEgNy4wNEwxOS42NSA3LjFDMTkuNDE5NSA3LjMzNTY4IDE5LjI2NDggNy42MzUwMiAxOS4yMDYgNy45NTk0MUMxOS4xNDcyIDguMjgzODEgMTkuMTg2OSA4LjYxODM4IDE5LjMyIDguOTJWOUMxOS40NDY4IDkuMjk1NzcgMTkuNjU3MiA5LjU0ODAyIDE5LjkyNTUgOS43MjU2OUMyMC4xOTM4IDkuOTAzMzcgMjAuNTA4MiA5Ljk5ODcyIDIwLjgzIDEwSDIxQzIxLjUzMDQgMTAgMjIuMDM5MSAxMC4yMTA3IDIyLjQxNDIgMTAuNTg1OEMyMi43ODkzIDEwLjk2MDkgMjMgMTEuNDY5NiAyMyAxMkMyMyAxMi41MzA0IDIyLjc4OTMgMTMuMDM5MSAyMi40MTQyIDEzLjQxNDJDMjIuMDM5MSAxMy43ODkzIDIxLjUzMDQgMTQgMjEgMTRIMjAuOTFDMjAuNTg4MiAxNC4wMDEzIDIwLjI3MzggMTQuMDk2NiAyMC4wMDU1IDE0LjI3NDNDMTkuNzM3MiAxNC40NTIgMTkuNTI2OCAxNC43MDQyIDE5LjQgMTVaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg==" width="16" height="16" style="display:inline-block;vertical-align:middle" alt=""> Настройки</span><button class="ib" onclick="closeM('m-settings')"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <line x1="18" y1="6" x2="6" y2="18" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
   <line x1="6" y1="6" x2="18" y2="18" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
 </svg></button></div>
     <div class="mbody">
       <div style="display:flex;flex-direction:column;gap:8px">
         <div class="settings-section">
-          <div class="settings-title">👤 Аккаунт</div>
+          <div class="settings-title"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMjAgMjFWMTlDMjAgMTcuOTM5MSAxOS41Nzg2IDE2LjkyMTcgMTguODI4NCAxNi4xNzE2QzE4LjA3ODMgMTUuNDIxNCAxNy4wNjA5IDE1IDE2IDE1SDhDNi45MzkxMyAxNSA1LjkyMTcyIDE1LjQyMTQgNS4xNzE1NyAxNi4xNzE2QzQuNDIxNDMgMTYuOTIxNyA0IDE3LjkzOTEgNCAxOVYyMSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjEyIiBjeT0iNyIgcj0iNCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> Аккаунт</div>
           <button class="settings-btn" onclick="openProfile();closeM('m-settings')"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="12" cy="7" r="4" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
@@ -849,7 +872,7 @@ textarea.fi{resize:none}
 </svg> Связаться с поддержкой</button>
         </div>
         <div class="settings-section">
-          <div class="settings-title">🎨 Интерфейс</div>
+          <div class="settings-title"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8Y2lyY2xlIGN4PSI4LjUiIGN5PSIxMCIgcj0iMS41IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIi8+CiAgPGNpcmNsZSBjeD0iMTUuNSIgY3k9IjEwIiByPSIxLjUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiLz4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjE1IiByPSIxLjUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiLz4KICA8cGF0aCBkPSJNMTIgMkM2LjUgMiAyIDYuNSAyIDEyQzIgMTQuNSAzIDE2LjggNC43IDE4LjUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjc1KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> Интерфейс</div>
           <div class="settings-row">
             <span>Размер текста</span>
             <select class="settings-sel" onchange="setFontSize(this.value)" id="font-size-sel">
@@ -872,14 +895,14 @@ textarea.fi{resize:none}
           </div>
         </div>
         <div class="settings-section">
-          <div class="settings-title">🔔 Уведомления</div>
+          <div class="settings-title"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTggOEMxOCA2LjQwODcgMTcuMzY3OSA0Ljg4MjU4IDE2LjI0MjYgMy43NTczNkMxNS4xMTc0IDIuNjMyMTQgMTMuNTkxMyAyIDEyIDJDMTAuNDA4NyAyIDguODgyNTggMi42MzIxNCA3Ljc1NzM2IDMuNzU3MzZDNi42MzIxNCA0Ljg4MjU4IDYgNi40MDg3IDYgOEM2IDE1IDMgMTcgMyAxN0gyMUMyMSAxNyAxOCAxNSAxOCA4WiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xMy43MyAyMUMxMy41NTQyIDIxLjMwMzEgMTMuMzAxOSAyMS41NTQ3IDEyLjk5ODIgMjEuNzI5NUMxMi42OTQ2IDIxLjkwNDQgMTIuMzUwNCAyMS45OTY1IDEyIDIxLjk5NjVDMTEuNjQ5NiAyMS45OTY1IDExLjMwNTQgMjEuOTA0NCAxMS4wMDE4IDIxLjcyOTVDMTAuNjk4MiAyMS41NTQ3IDEwLjQ0NTggMjEuMzAzMSAxMC4yNyAyMSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> Уведомления</div>
           <div class="settings-row">
             <span>Звук сообщений</span>
             <label class="toggle"><input type="checkbox" id="sound-toggle" onchange="toggleSound(this.checked)" checked><span class="toggle-sl"></span></label>
           </div>
         </div>
         <div class="settings-section" id="admin-section" style="display:none">
-          <div class="settings-title">🛡️ Администрирование</div>
+          <div class="settings-title"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTIgMjJDMTIgMjIgMjAgMTggMjAgMTJWNUwxMiAyTDQgNVYxMkM0IDE4IDEyIDIyIDEyIDIyWiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> Администрирование</div>
           <button class="settings-btn" onclick="openAdminPanel();closeM('m-settings')"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <circle cx="12" cy="12" r="3" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
   <path d="M19.4 15C19.2669 15.3016 19.2272 15.6362 19.286 15.9606C19.3448 16.285 19.4995 16.5843 19.73 16.82L19.79 16.88C19.976 17.0657 20.1235 17.2863 20.2241 17.5291C20.3248 17.7719 20.3766 18.0322 20.3766 18.295C20.3766 18.5578 20.3248 18.8181 20.2241 19.0609C20.1235 19.3037 19.976 19.5243 19.79 19.71C19.6043 19.896 19.3837 20.0435 19.1409 20.1441C18.8981 20.2448 18.6378 20.2966 18.375 20.2966C18.1122 20.2966 17.8519 20.2448 17.6091 20.1441C17.3663 20.0435 17.1457 19.896 16.96 19.71L16.9 19.65C16.6643 19.4195 16.365 19.2648 16.0406 19.206C15.7162 19.1472 15.3816 19.1869 15.08 19.32C14.7842 19.4468 14.532 19.6572 14.3543 19.9255C14.1766 20.1938 14.0813 20.5082 14.08 20.83V21C14.08 21.5304 13.8693 22.0391 13.4942 22.4142C13.1191 22.7893 12.6104 23 12.08 23C11.5496 23 11.0409 22.7893 10.6658 22.4142C10.2907 22.0391 10.08 21.5304 10.08 21V20.91C10.0723 20.579 9.96512 20.258 9.77251 19.9887C9.5799 19.7194 9.31074 19.5143 9 19.4C8.69838 19.2669 8.36381 19.2272 8.03941 19.286C7.71502 19.3448 7.41568 19.4995 7.18 19.73L7.12 19.79C6.93425 19.976 6.71368 20.1235 6.47088 20.2241C6.22808 20.3248 5.96783 20.3766 5.705 20.3766C5.44217 20.3766 5.18192 20.3248 4.93912 20.2241C4.69632 20.1235 4.47575 19.976 4.29 19.79C4.10405 19.6043 3.95653 19.3837 3.85588 19.1409C3.75523 18.8981 3.70343 18.6378 3.70343 18.375C3.70343 18.1122 3.75523 17.8519 3.85588 17.6091C3.95653 17.3663 4.10405 17.1457 4.29 16.96L4.35 16.9C4.58054 16.6643 4.73519 16.365 4.794 16.0406C4.85282 15.7162 4.81312 15.3816 4.68 15.08C4.55324 14.7842 4.34276 14.532 4.07447 14.3543C3.80618 14.1766 3.49179 14.0813 3.17 14.08H3C2.46957 14.08 1.96086 13.8693 1.58579 13.4942C1.21071 13.1191 1 12.6104 1 12.08C1 11.5496 1.21071 11.0409 1.58579 10.6658C1.96086 10.2907 2.46957 10.08 3 10.08H3.09C3.42099 10.0723 3.742 9.96512 4.0113 9.77251C4.28059 9.5799 4.48572 9.31074 4.6 9C4.73312 8.69838 4.77282 8.36381 4.714 8.03941C4.65519 7.71502 4.50054 7.41568 4.27 7.18L4.21 7.12C4.02405 6.93425 3.87653 6.71368 3.77588 6.47088C3.67523 6.22808 3.62343 5.96783 3.62343 5.705C3.62343 5.44217 3.67523 5.18192 3.77588 4.93912C3.87653 4.69632 4.02405 4.47575 4.21 4.29C4.39575 4.10405 4.61632 3.95653 4.85912 3.85588C5.10192 3.75523 5.36217 3.70343 5.625 3.70343C5.88783 3.70343 6.14808 3.75523 6.39088 3.85588C6.63368 3.95653 6.85425 4.10405 7.04 4.29L7.1 4.35C7.33568 4.58054 7.63502 4.73519 7.95941 4.794C8.28381 4.85282 8.61838 4.81312 8.92 4.68H9C9.29577 4.55324 9.54802 4.34276 9.72569 4.07447C9.90337 3.80618 9.99872 3.49179 10 3.17V3C10 2.46957 10.2107 1.96086 10.5858 1.58579C10.9609 1.21071 11.4696 1 12 1C12.5304 1 13.0391 1.21071 13.4142 1.58579C13.7893 1.96086 14 2.46957 14 3V3.09C14.0013 3.41179 14.0966 3.72618 14.2743 3.99447C14.452 4.26276 14.7042 4.47324 15 4.6C15.3016 4.73312 15.6362 4.77282 15.9606 4.714C16.285 4.65519 16.5843 4.50054 16.82 4.27L16.88 4.21C17.0657 4.02405 17.2863 3.87653 17.5291 3.77588C17.7719 3.67523 18.0322 3.62343 18.295 3.62343C18.5578 3.62343 18.8181 3.67523 19.0609 3.77588C19.3037 3.87653 19.5243 4.02405 19.71 4.21C19.896 4.39575 20.0435 4.61632 20.1441 4.85912C20.2448 5.10192 20.2966 5.36217 20.2966 5.625C20.2966 5.88783 20.2448 6.14808 20.1441 6.39088C20.0435 6.63368 19.896 6.85425 19.71 7.04L19.65 7.1C19.4195 7.33568 19.2648 7.63502 19.206 7.95941C19.1472 8.28381 19.1869 8.61838 19.32 8.92V9C19.4468 9.29577 19.6572 9.54802 19.9255 9.72569C20.1938 9.90337 20.5082 9.99872 20.83 10H21C21.5304 10 22.0391 10.2107 22.4142 10.5858C22.7893 10.9609 23 11.4696 23 12C23 12.5304 22.7893 13.0391 22.4142 13.4142C22.0391 13.7893 21.5304 14 21 14H20.91C20.5882 14.0013 20.2738 14.0966 20.0055 14.2743C19.7372 14.452 19.5268 14.7042 19.4 15Z" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -900,7 +923,7 @@ textarea.fi{resize:none}
 <!-- MODAL: ADMIN PANEL -->
 <div class="ov" id="m-admin" onclick="closeOv(event,'m-admin')">
   <div class="modal" style="max-width:520px">
-    <div class="mhd"><span class="mt">🛡️ Панель администратора</span><button class="ib" onclick="closeM('m-admin')"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div class="mhd"><span class="mt"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTIgMjJDMTIgMjIgMjAgMTggMjAgMTJWNUwxMiAyTDQgNVYxMkM0IDE4IDEyIDIyIDEyIDIyWiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="16" height="16" style="display:inline-block;vertical-align:middle" alt=""> Панель администратора</span><button class="ib" onclick="closeM('m-admin')"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <line x1="18" y1="6" x2="6" y2="18" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
   <line x1="6" y1="6" x2="18" y2="18" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
 </svg></button></div>
@@ -912,7 +935,7 @@ textarea.fi{resize:none}
       </div>
       <div id="adm-users">
         <div class="srch-in" style="margin-bottom:10px">
-          <span class="sico">🔍</span>
+          <span class="sico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""></span>
           <input class="si" style="width:100%" id="adm-srch" type="text" placeholder="Поиск пользователей..." oninput="filterAdmUsers(this.value)">
         </div>
         <div id="adm-users-list" style="max-height:320px;overflow-y:auto"></div>
@@ -934,14 +957,14 @@ textarea.fi{resize:none}
 <!-- MODAL: MANAGE MEMBERS -->
 <div class="ov" id="m-mngmbrs" onclick="closeOv(event,'m-mngmbrs')">
   <div class="modal">
-    <div class="mhd"><span class="mt">👥 Управление участниками</span><button class="ib" onclick="closeM('m-mngmbrs')"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div class="mhd"><span class="mt"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTcgMjFWMTlDMTcgMTcuOTM5MSAxNi41Nzg2IDE2LjkyMTcgMTUuODI4NCAxNi4xNzE2QzE1LjA3ODMgMTUuNDIxNCAxNC4wNjA5IDE1IDEzIDE1SDVDMy45MzkxMyAxNSAyLjkyMTcyIDE1LjQyMTQgMi4xNzE1NyAxNi4xNzE2QzEuNDIxNDMgMTYuOTIxNyAxIDE3LjkzOTEgMSAxOVYyMSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjkiIGN5PSI3IiByPSI0IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxwYXRoIGQ9Ik0yMyAyMVYxOUMyMi45OTkzIDE4LjExMzcgMjIuNzA0NCAxNy4yNTI4IDIyLjE2MTQgMTYuNTUyM0MyMS42MTg0IDE1Ljg1MTkgMjAuODU4MSAxNS4zNTE2IDIwIDE1LjEzIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE2IDMuMTNDMTYuODYwNCAzLjM1MDMxIDE3LjYyMyAzLjg1MDcxIDE4LjE2NzYgNC41NTIzMkMxOC43MTIyIDUuMjUzOTIgMTkuMDA3OCA2LjExNjgzIDE5LjAwNzggNy4wMDVDMTkuMDA3OCA3Ljg5MzE3IDE4LjcxMjIgOC43NTYwOCAxOC4xNjc2IDkuNDU3NjlDMTcuNjIzIDEwLjE1OTMgMTYuODYwNCAxMC42NTk3IDE2IDEwLjg4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg==" width="16" height="16" style="display:inline-block;vertical-align:middle" alt=""> Управление участниками</span><button class="ib" onclick="closeM('m-mngmbrs')"><svg width="16" height="16" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <line x1="18" y1="6" x2="6" y2="18" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
   <line x1="6" y1="6" x2="18" y2="18" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
 </svg></button></div>
     <div class="mbody">
       <div id="mng-current" style="max-height:220px;overflow-y:auto;margin-bottom:16px"></div>
       <div class="fg"><label class="fl">Добавить участника</label>
-        <div class="srch-in"><span class="sico">🔍</span>
+        <div class="srch-in"><span class="sico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43NSkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""></span>
           <input class="si" style="width:100%" id="add-mbr-srch" type="text" placeholder="Найти пользователя..." oninput="srchAddMbr(this.value)">
         </div>
       </div>
@@ -950,6 +973,30 @@ textarea.fi{resize:none}
   </div>
 </div>
 
+
+<!-- MODAL: EDIT ROOM -->
+<div class="ov" id="m-edit-room" onclick="closeOv(event,'m-edit-room')">
+  <div class="modal">
+    <div class="mhd"><span class="mt">Редактировать</span><button class="ib" onclick="closeM('m-edit-room')"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8bGluZSB4MT0iMTgiIHkxPSI2IiB4Mj0iNiIgeTI9IjE4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8bGluZSB4MT0iNiIgeTE9IjYiIHgyPSIxOCIgeTI9IjE4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" width="16" height="16" style="display:inline-block;vertical-align:middle" alt=""></button></div>
+    <div class="mbody">
+      <!-- Аватарка группы -->
+      <div style="display:flex;justify-content:center;margin-bottom:18px">
+        <div class="room-av-wrap" onclick="trigRoomAv()">
+          <div class="av av56" id="edit-room-av" style="background:var(--acc)">?</div>
+          <div class="room-av-edit"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiIGZpbGw9IndoaXRlIi8+CiAgPHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNSAyMSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="10" height="10" style="display:inline-block;vertical-align:middle" alt=""></div>
+        </div>
+      </div>
+      <input type="file" id="room-av-fi" accept="image/*" style="display:none" onchange="prevRoomAv(this)">
+      <!-- Цвет аватарки -->
+      <div id="room-av-colors" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;justify-content:center"></div>
+      <div class="fg"><label class="fl">Название</label>
+        <input class="fi" id="edit-room-name" type="text" placeholder="Название группы..."></div>
+      <div class="fg"><label class="fl">Описание</label>
+        <textarea class="fi" id="edit-room-desc" rows="2" placeholder="О чём эта группа..."></textarea></div>
+      <button class="btn btn-p btn-full" onclick="saveRoom()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cG9seWxpbmUgcG9pbnRzPSIxIDEyIDUgMTYgMTMgOCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBvbHlsaW5lIHBvaW50cz0iOSAxMiAxMyAxNiAyMSA4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="16" height="16" style="display:inline-block;vertical-align:middle" alt=""> Сохранить</button>
+    </div>
+  </div>
+</div>
 <!-- INCOMING CALL -->
 <div class="incoming-call" id="incoming-call">
   <div class="av av46" id="ic-av">?</div>
@@ -998,7 +1045,7 @@ textarea.fi{resize:none}
 
 <!-- LIGHTBOX -->
 <div class="lb" id="lb" onclick="closeLB()">
-  <button class="lb-close">✕</button>
+  <button class="lb-close" style="font-size:28px;line-height:1"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8bGluZSB4MT0iMTgiIHkxPSI2IiB4Mj0iNiIgeTI9IjE4IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxsaW5lIHgxPSI2IiB5MT0iNiIgeDI9IjE4IiB5Mj0iMTgiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPg==" width="28" height="28" style="display:inline-block;vertical-align:middle" alt=""></button>
   <img id="lb-img" src="" alt="">
 </div>
 
@@ -1205,6 +1252,7 @@ function handleWS(d){
     case 'msg_edited':    onWsEdit(d); break;
     case 'msg_pinned':    onWsPin(d); break;
     case 'room_deleted':  onWsRoomDel(d.room_id); break;
+    case 'room_updated':   onWsRoomUpd(d.room); break;
     case 'call_offer':    onCallOffer(d); break;
     case 'call_answer':   onCallAnswer(d); break;
     case 'call_ice':      onCallIce(d); break;
@@ -1298,22 +1346,23 @@ function renderRooms(list){
   const el=document.getElementById('chatlist');
   const filtered = S.sbTab==='channels' ? list.filter(r=>r.room_type==='channel')
     : list.filter(r=>r.room_type!=='channel');
-  if(!filtered.length){el.innerHTML='<div class="no-chats"><div class="ico">💬</div>Пусто</div>';return;}
+  if(!filtered.length){el.innerHTML='<div class="no-chats"><div class="ico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTcgMjFWMTlDMTcgMTcuOTM5MSAxNi41Nzg2IDE2LjkyMTcgMTUuODI4NCAxNi4xNzE2QzE1LjA3ODMgMTUuNDIxNCAxNC4wNjA5IDE1IDEzIDE1SDVDMy45MzkxMyAxNSAyLjkyMTcyIDE1LjQyMTQgMi4xNzE1NyAxNi4xNzE2QzEuNDIxNDMgMTYuOTIxNyAxIDE3LjkzOTEgMSAxOVYyMSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iOSIgY3k9IjciIHI9IjQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJNMjMgMjFWMTlDMjIuOTk5MyAxOC4xMTM3IDIyLjcwNDQgMTcuMjUyOCAyMi4xNjE0IDE2LjU1MjNDMjEuNjE4NCAxNS44NTE5IDIwLjg1ODEgMTUuMzUxNiAyMCAxNS4xMyIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE2IDMuMTNDMTYuODYwNCAzLjM1MDMxIDE3LjYyMyAzLjg1MDcxIDE4LjE2NzYgNC41NTIzMkMxOC43MTIyIDUuMjUzOTIgMTkuMDA3OCA2LjExNjgzIDE5LjAwNzggNy4wMDVDMTkuMDA3OCA3Ljg5MzE3IDE4LjcxMjIgOC43NTYwOCAxOC4xNjc2IDkuNDU3NjlDMTcuNjIzIDEwLjE1OTMgMTYuODYwNCAxMC42NTk3IDE2IDEwLjg4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="40" height="40" style="display:inline-block;vertical-align:middle" alt=""></div>Пусто</div>';return;}
   el.innerHTML=filtered.map(r=>roomItem(r)).join('');
 }
 
 function roomItem(r){
   const isGrp=r.room_type==='group'||r.room_type==='channel';
   const isAI=r.room_type==='ai';
-  let name,color,online,img;
+  let name,color,online,img,roomImg=null;
+  if(r.avatar_img&&isGrp){roomImg=r.avatar_img;}
   if(isAI){name='<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSIzIiB5PSI5IiB3aWR0aD0iMTgiIGhlaWdodD0iMTIiIHJ4PSIyIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0iTTkgOVY3QzkgNS4zNDMxNSAxMC4zNDMxIDQgMTIgNEMxMy42NTY5IDQgMTUgNS4zNDMxNSAxNSA3VjkiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjcpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjkiIGN5PSIxNCIgcj0iMS41IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNykiLz4KICA8Y2lyY2xlIGN4PSIxNSIgY3k9IjE0IiByPSIxLjUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIvPgogIDxwYXRoIGQ9Ik05IDE4SDE1IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMTIgNFYyIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNNCAxM0gyIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0yMiAxM0gyMCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNykiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> ИИ Ассистент';color='#00B894';online=true;img=null;}
   else if(!isGrp){
     const o=r.members.find(m=>m.id!==S.me.id)||r.members[0];
     name=o?dn(o):'Чат';color=o?o.avatar_color:'#5288c1';online=o?o.is_online:false;img=o?o.avatar_img:null;
   } else{name=r.name||'Группа';color='#5288c1';online=false;img=null;}
   const dot=online?'<div class="dot"></div>':'';
-  const avStyle=img?`background-image:url(${img});background-size:cover;background-position:center`:`background:${color}`;
-  const avTxt=img?'':ini(name);
+  const avStyle=roomImg?`background-image:url(${roomImg});background-size:cover;background-position:center`:(img?`background-image:url(${img});background-size:cover;background-position:center`:`background:${color}`);
+  const avTxt=(roomImg||img)?'':ini(name);
   const badge=r.unread_count>0?`<div class="badge">${r.unread_count>99?'99+':r.unread_count}</div>`:'';
   const last=r.last_message;
   let prev='Нет сообщений',prevIco='';
@@ -1419,9 +1468,11 @@ function updChatHead(){
     const online=o?o.is_online:false;
     const ls=o?o.last_seen:null;
     sub=online?'онлайн':(ls?`был(а) ${fmtLastSeen(ls)}`:'оффлайн');
-  } else{name=room.name||'Группа';color='#5288c1';sub=`${room.members.length} участников`;}
+  } else{name=room.name||'Группа';color=room.avatar_color||'#5288c1';sub=`${room.members.length} участников`;}
   const av=document.getElementById('ch-av');
-  if(img){av.style.backgroundImage=`url(${img})`;av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.style.background='';av.textContent='';}
+  const roomAv=isGrp?room.avatar_img:null;
+  if(roomAv){av.style.backgroundImage=`url(${roomAv})`;av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.style.background='';av.textContent='';}
+  else if(img){av.style.backgroundImage=`url(${img})`;av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.style.background='';av.textContent='';}
   else{av.style.backgroundImage='';av.style.background=color;av.textContent=ini(name);}
   document.getElementById('ch-name').innerHTML=esc(name)+(rt==='channel'?'<span style="font-size:12px;color:var(--t3);margin-left:6px"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMyAxMUwyMiAyTDEzIDIxTDExIDEzTDMgMTFaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC40KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="12" height="12" style="display:inline-block;vertical-align:middle" alt=""> Канал</span>':rt==='ai'?'':'');
   const se=document.getElementById('ch-sub');
@@ -1430,6 +1481,8 @@ function updChatHead(){
   document.getElementById('call-voice-btn').style.display=(rt==='chat'&&!isGrp)?'flex':'none';
   document.getElementById('call-video-btn').style.display=(rt==='chat'&&!isGrp)?'flex':'none';
   document.getElementById('del-grp-btn').style.display=(isGrp&&room.created_by===S.me.id)?'flex':'none';
+  const editBtn=document.getElementById('edit-grp-btn');
+  if(editBtn){const mb=room.members.find(m=>m.id===S.me.id);editBtn.style.display=(isGrp&&mb&&mb.is_admin)?'flex':'none';}
 }
 
 function updPinnedBanner(room){
@@ -1595,10 +1648,10 @@ function showCtxMenu(e,msg,isOut){
   items.push('<div class="ctx-sep"></div>');
   items.push(`<div class="ctx-item" onclick="replyTo(${msg.id});hideCtx()"><span class="ctx-ico">↩️</span>Ответить</div>`);
   if(!msg.is_deleted){
-    if(isOut&&msg.msg_type==='text') items.push(`<div class="ctx-item" onclick="editMsg(${msg.id});hideCtx()"><span class="ctx-ico">✏️</span>Редактировать</div>`);
-    items.push(`<div class="ctx-item" onclick="pinMsg(${msg.id});hideCtx()"><span class="ctx-ico">📌</span>${msg.is_pinned?'Открепить':'Закрепить'}</div>`);
-    items.push(`<div class="ctx-item" onclick="copyMsg('${esc(msg.content)}');hideCtx()"><span class="ctx-ico">📋</span>Копировать</div>`);
-    if(isOut||canAdmin()) items.push(`<div class="ctx-item danger" onclick="delMsg(${msg.id});hideCtx()"><span class="ctx-ico">🗑️</span>Удалить</div>`);
+    if(isOut&&msg.msg_type==='text') items.push(`<div class="ctx-item" onclick="editMsg(${msg.id});hideCtx()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTEgNEg0QzMuNDY5NTcgNCAyLjk2MDg2IDQuMjEwNzEgMi41ODU3OSA0LjU4NTc5QzIuMjEwNzEgNC45NjA4NiAyIDUuNDY5NTcgMiA2VjIwQzIgMjAuNTMwNCAyLjIxMDcxIDIxLjAzOTEgMi41ODU3OSAyMS40MTQyQzIuOTYwODYgMjEuNzg5MyAzLjQ2OTU3IDIyIDQgMjJIMThDMTguNTMwNCAyMiAxOS4wMzkxIDIxLjc4OTMgMTkuNDE0MiAyMS40MTQyQzE5Ljc4OTMgMjEuMDM5MSAyMCAyMC41MzA0IDIwIDIwVjEzIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNMTguNSAyLjVDMTguODk3OCAyLjEwMjE3IDE5LjQzNzQgMS44Nzg2OCAyMCAxLjg3ODY4QzIwLjU2MjYgMS44Nzg2OCAyMS4xMDIyIDIuMTAyMTcgMjEuNSAyLjVDMjEuODk3OCAyLjg5NzgyIDIyLjEyMTMgMy40MzczOSAyMi4xMjEzIDRDMjIuMTIxMyA0LjU2MjYxIDIxLjg5NzggNS4xMDIxNyAyMS41IDUuNUwxMiAxNUw4IDE2TDkgMTJMMTguNSAyLjVaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="16" height="16" style="display:inline-block;vertical-align:middle" alt="">Редактировать</div>`);
+    items.push(`<div class="ctx-item" onclick="pinMsg(${msg.id});hideCtx()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8bGluZSB4MT0iMTIiIHkxPSIxNyIgeDI9IjEyIiB5Mj0iMjIiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjgpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik01IDE3SDE5IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMTUgNUg5TDcgMTFMMTcgMTFMMTUgNVoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjgpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="16" height="16" style="display:inline-block;vertical-align:middle" alt="">${msg.is_pinned?'Открепить':'Закрепить'}</div>`);
+    items.push(`<div class="ctx-item" onclick="copyMsg('${esc(msg.content)}');hideCtx()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSI5IiB5PSI5IiB3aWR0aD0iMTMiIGhlaWdodD0iMTMiIHJ4PSIyIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0iTTUgMTVINEMzLjQ2OTU3IDE1IDIuOTYwODYgMTQuNzg5MyAyLjU4NTc5IDE0LjQxNDJDMi4yMTA3MSAxNC4wMzkxIDIgMTMuNTMwNCAyIDEzVjRDMiAzLjQ2OTU3IDIuMjEwNzEgMi45NjA4NiAyLjU4NTc5IDIuNTg1NzlDMi45NjA4NiAyLjIxMDcxIDMuNDY5NTcgMiA0IDJIMTNDMTMuNTMwNCAyIDE0LjAzOTEgMi4yMTA3MSAxNC40MTQyIDIuNTg1NzlDMTQuNzg5MyAyLjk2MDg2IDE1IDMuNDY5NTcgMTUgNFY1IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" width="16" height="16" style="display:inline-block;vertical-align:middle" alt="">Копировать</div>`);
+    if(isOut||canAdmin()) items.push(`<div class="ctx-item danger" onclick="delMsg(${msg.id});hideCtx()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cG9seWxpbmUgcG9pbnRzPSIzIDYgNSA2IDIxIDYiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjgpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOSA2TDE4LjEzMjcgMjAuMTQyNUMxOC4wNTc5IDIxLjE4OTEgMTcuMTg3IDIyIDE2LjEzNzggMjJINy44NjIyNEM2LjgxMjk2IDIyIDUuOTQyMDggMjEuMTg5MSA1Ljg2NzMyIDIwLjE0MjVMNSA2IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNMTAgMTFWMTciIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjgpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xNCAxMVYxNyIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTkgNlY0QzkgMy40NDc3MiA5LjQ0NzcyIDMgMTAgM0gxNEMxNC41NTIzIDMgMTUgMy40NDc3MiAxNSA0VjYiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjgpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="16" height="16" style="display:inline-block;vertical-align:middle" alt="">Удалить</div>`);
   }
   m.innerHTML=items.join('');
   m.classList.remove('hidden');
@@ -1885,7 +1938,7 @@ async function showMembers(){
     el.innerHTML=ms.map(m=>`<div class="ur">${avHtml(m,'av32')}<div class="uri"><div class="urn">${esc(dn(m))}${m.id===S.me.id?' <span style="color:var(--t3);font-size:11px">(вы)</span>':''}${m.is_admin?' <span style="color:var(--acc);font-size:11px">admin</span>':''}</div><div class="ust ${m.is_online?'on':''}">${m.is_online?'онлайн':(m.last_seen?`был ${fmtLastSeen(m.last_seen)}`:'оффлайн')}</div></div></div>`).join('');
     // Кнопка управления для Admin
     if(isGrp&&amAdmin){
-      el.innerHTML+=`<button class="btn btn-ghost btn-full" style="margin-top:14px" onclick="openManageMembers()">⚙️ Управление участниками</button>`;
+      el.innerHTML+=`<button class="btn btn-ghost btn-full" style="margin-top:14px" onclick="openManageMembers()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0iTTE5LjQgMTVDMTkuMjY2OSAxNS4zMDE2IDE5LjIyNzIgMTUuNjM2MiAxOS4yODYgMTUuOTYwNkMxOS4zNDQ4IDE2LjI4NSAxOS40OTk1IDE2LjU4NDMgMTkuNzMgMTYuODJMMTkuNzkgMTYuODhDMTkuOTc2IDE3LjA2NTcgMjAuMTIzNSAxNy4yODYzIDIwLjIyNDEgMTcuNTI5MUMyMC4zMjQ4IDE3Ljc3MTkgMjAuMzc2NiAxOC4wMzIyIDIwLjM3NjYgMTguMjk1QzIwLjM3NjYgMTguNTU3OCAyMC4zMjQ4IDE4LjgxODEgMjAuMjI0MSAxOS4wNjA5QzIwLjEyMzUgMTkuMzAzNyAxOS45NzYgMTkuNTI0MyAxOS43OSAxOS43MUMxOS42MDQzIDE5Ljg5NiAxOS4zODM3IDIwLjA0MzUgMTkuMTQwOSAyMC4xNDQxQzE4Ljg5ODEgMjAuMjQ0OCAxOC42Mzc4IDIwLjI5NjYgMTguMzc1IDIwLjI5NjZDMTguMTEyMiAyMC4yOTY2IDE3Ljg1MTkgMjAuMjQ0OCAxNy42MDkxIDIwLjE0NDFDMTcuMzY2MyAyMC4wNDM1IDE3LjE0NTcgMTkuODk2IDE2Ljk2IDE5LjcxTDE2LjkgMTkuNjVDMTYuNjY0MyAxOS40MTk1IDE2LjM2NSAxOS4yNjQ4IDE2LjA0MDYgMTkuMjA2QzE1LjcxNjIgMTkuMTQ3MiAxNS4zODE2IDE5LjE4NjkgMTUuMDggMTkuMzJDMTQuNzg0MiAxOS40NDY4IDE0LjUzMiAxOS42NTcyIDE0LjM1NDMgMTkuOTI1NUMxNC4xNzY2IDIwLjE5MzggMTQuMDgxMyAyMC41MDgyIDE0LjA4IDIwLjgzVjIxQzE0LjA4IDIxLjUzMDQgMTMuODY5MyAyMi4wMzkxIDEzLjQ5NDIgMjIuNDE0MkMxMy4xMTkxIDIyLjc4OTMgMTIuNjEwNCAyMyAxMi4wOCAyM0MxMS41NDk2IDIzIDExLjA0MDkgMjIuNzg5MyAxMC42NjU4IDIyLjQxNDJDMTAuMjkwNyAyMi4wMzkxIDEwLjA4IDIxLjUzMDQgMTAuMDggMjFWMjAuOTFDMTAuMDcyMyAyMC41NzkgOS45NjUxMiAyMC4yNTggOS43NzI1MSAxOS45ODg3QzkuNTc5OSAxOS43MTk0IDkuMzEwNzQgMTkuNTE0MyA5IDE5LjRDOC42OTgzOCAxOS4yNjY5IDguMzYzODEgMTkuMjI3MiA4LjAzOTQxIDE5LjI4NkM3LjcxNTAyIDE5LjM0NDggNy40MTU2OCAxOS40OTk1IDcuMTggMTkuNzNMNy4xMiAxOS43OUM2LjkzNDI1IDE5Ljk3NiA2LjcxMzY4IDIwLjEyMzUgNi40NzA4OCAyMC4yMjQxQzYuMjI4MDggMjAuMzI0OCA1Ljk2NzgzIDIwLjM3NjYgNS43MDUgMjAuMzc2NkM1LjQ0MjE3IDIwLjM3NjYgNS4xODE5MiAyMC4zMjQ4IDQuOTM5MTIgMjAuMjI0MUM0LjY5NjMyIDIwLjEyMzUgNC40NzU3NSAxOS45NzYgNC4yOSAxOS43OUM0LjEwNDA1IDE5LjYwNDMgMy45NTY1MyAxOS4zODM3IDMuODU1ODggMTkuMTQwOUMzLjc1NTIzIDE4Ljg5ODEgMy43MDM0MyAxOC42Mzc4IDMuNzAzNDMgMTguMzc1QzMuNzAzNDMgMTguMTEyMiAzLjc1NTIzIDE3Ljg1MTkgMy44NTU4OCAxNy42MDkxQzMuOTU2NTMgMTcuMzY2MyA0LjEwNDA1IDE3LjE0NTcgNC4yOSAxNi45Nkw0LjM1IDE2LjlDNC41ODA1NCAxNi42NjQzIDQuNzM1MTkgMTYuMzY1IDQuNzk0IDE2LjA0MDZDNC44NTI4MiAxNS43MTYyIDQuODEzMTIgMTUuMzgxNiA0LjY4IDE1LjA4QzQuNTUzMjQgMTQuNzg0MiA0LjM0Mjc2IDE0LjUzMiA0LjA3NDQ3IDE0LjM1NDNDMy44MDYxOCAxNC4xNzY2IDMuNDkxNzkgMTQuMDgxMyAzLjE3IDE0LjA4SDNDMi40Njk1NyAxNC4wOCAxLjk2MDg2IDEzLjg2OTMgMS41ODU3OSAxMy40OTQyQzEuMjEwNzEgMTMuMTE5MSAxIDEyLjYxMDQgMSAxMi4wOEMxIDExLjU0OTYgMS4yMTA3MSAxMS4wNDA5IDEuNTg1NzkgMTAuNjY1OEMxLjk2MDg2IDEwLjI5MDcgMi40Njk1NyAxMC4wOCAzIDEwLjA4SDMuMDlDMy40MjA5OSAxMC4wNzIzIDMuNzQyIDkuOTY1MTIgNC4wMTEzIDkuNzcyNTFDNC4yODA1OSA5LjU3OTkgNC40ODU3MiA5LjMxMDc0IDQuNiA5QzQuNzMzMTIgOC42OTgzOCA0Ljc3MjgyIDguMzYzODEgNC43MTQgOC4wMzk0MUM0LjY1NTE5IDcuNzE1MDIgNC41MDA1NCA3LjQxNTY4IDQuMjcgNy4xOEw0LjIxIDcuMTJDNC4wMjQwNSA2LjkzNDI1IDMuODc2NTMgNi43MTM2OCAzLjc3NTg4IDYuNDcwODhDMy42NzUyMyA2LjIyODA4IDMuNjIzNDMgNS45Njc4MyAzLjYyMzQzIDUuNzA1QzMuNjIzNDMgNS40NDIxNyAzLjY3NTIzIDUuMTgxOTIgMy43NzU4OCA0LjkzOTEyQzMuODc2NTMgNC42OTYzMiA0LjAyNDA1IDQuNDc1NzUgNC4yMSA0LjI5QzQuMzk1NzUgNC4xMDQwNSA0LjYxNjMyIDMuOTU2NTMgNC44NTkxMiAzLjg1NTg4QzUuMTAxOTIgMy43NTUyMyA1LjM2MjE3IDMuNzAzNDMgNS42MjUgMy43MDM0M0M1Ljg4NzgzIDMuNzAzNDMgNi4xNDgwOCAzLjc1NTIzIDYuMzkwODggMy44NTU4OEM2LjYzMzY4IDMuOTU2NTMgNi44NTQyNSA0LjEwNDA1IDcuMDQgNC4yOUw3LjEgNC4zNUM3LjMzNTY4IDQuNTgwNTQgNy42MzUwMiA0LjczNTE5IDcuOTU5NDEgNC43OTRDOC4yODM4MSA0Ljg1MjgyIDguNjE4MzggNC44MTMxMiA4LjkyIDQuNjhIOUM5LjI5NTc3IDQuNTUzMjQgOS41NDgwMiA0LjM0Mjc2IDkuNzI1NjkgNC4wNzQ0N0M5LjkwMzM3IDMuODA2MTggOS45OTg3MiAzLjQ5MTc5IDEwIDMuMTdWM0MxMCAyLjQ2OTU3IDEwLjIxMDcgMS45NjA4NiAxMC41ODU4IDEuNTg1NzlDMTAuOTYwOSAxLjIxMDcxIDExLjQ2OTYgMSAxMiAxQzEyLjUzMDQgMSAxMy4wMzkxIDEuMjEwNzEgMTMuNDE0MiAxLjU4NTc5QzEzLjc4OTMgMS45NjA4NiAxNCAyLjQ2OTU3IDE0IDNWMy4wOUMxNC4wMDEzIDMuNDExNzkgMTQuMDk2NiAzLjcyNjE4IDE0LjI3NDMgMy45OTQ0N0MxNC40NTIgNC4yNjI3NiAxNC43MDQyIDQuNDczMjQgMTUgNC42QzE1LjMwMTYgNC43MzMxMiAxNS42MzYyIDQuNzcyODIgMTUuOTYwNiA0LjcxNEMxNi4yODUgNC42NTUxOSAxNi41ODQzIDQuNTAwNTQgMTYuODIgNC4yN0wxNi44OCA0LjIxQzE3LjA2NTcgNC4wMjQwNSAxNy4yODYzIDMuODc2NTMgMTcuNTI5MSAzLjc3NTg4QzE3Ljc3MTkgMy42NzUyMyAxOC4wMzIyIDMuNjIzNDMgMTguMjk1IDMuNjIzNDNDMTguNTU3OCAzLjYyMzQzIDE4LjgxODEgMy42NzUyMyAxOS4wNjA5IDMuNzc1ODhDMTkuMzAzNyAzLjg3NjUzIDE5LjUyNDMgNC4wMjQwNSAxOS43MSA0LjIxQzE5Ljg5NiA0LjM5NTc1IDIwLjA0MzUgNC42MTYzMiAyMC4xNDQxIDQuODU5MTJDMjAuMjQ0OCA1LjEwMTkyIDIwLjI5NjYgNS4zNjIxNyAyMC4yOTY2IDUuNjI1QzIwLjI5NjYgNS44ODc4MyAyMC4yNDQ4IDYuMTQ4MDggMjAuMTQ0MSA2LjM5MDg4QzIwLjA0MzUgNi42MzM2OCAxOS44OTYgNi44NTQyNSAxOS43MSA3LjA0TDE5LjY1IDcuMUMxOS40MTk1IDcuMzM1NjggMTkuMjY0OCA3LjYzNTAyIDE5LjIwNiA3Ljk1OTQxQzE5LjE0NzIgOC4yODM4MSAxOS4xODY5IDguNjE4MzggMTkuMzIgOC45MlY5QzE5LjQ0NjggOS4yOTU3NyAxOS42NTcyIDkuNTQ4MDIgMTkuOTI1NSA5LjcyNTY5QzIwLjE5MzggOS45MDMzNyAyMC41MDgyIDkuOTk4NzIgMjAuODMgMTBIMjFDMjEuNTMwNCAxMCAyMi4wMzkxIDEwLjIxMDcgMjIuNDE0MiAxMC41ODU4QzIyLjc4OTMgMTAuOTYwOSAyMyAxMS40Njk2IDIzIDEyQzIzIDEyLjUzMDQgMjIuNzg5MyAxMy4wMzkxIDIyLjQxNDIgMTMuNDE0MkMyMi4wMzkxIDEzLjc4OTMgMjEuNTMwNCAxNCAyMSAxNEgyMC45MUMyMC41ODgyIDE0LjAwMTMgMjAuMjczOCAxNC4wOTY2IDIwLjAwNTUgMTQuMjc0M0MxOS43MzcyIDE0LjQ1MiAxOS41MjY4IDE0LjcwNDIgMTkuNCAxNVoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjgpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="16" height="16" style="display:inline-block;vertical-align:middle" alt=""> Управление участниками</button>`;
     }
   }catch(e){el.innerHTML=`<div style="color:var(--t3)">${esc(e.message)}</div>`;}
 }
@@ -2291,6 +2344,82 @@ async function toggleMbrAdmin(uid){
 /* ════ WS EVENTS для групп ════════════════════════ */
 // Добавляем обработчики для added_to_room / removed_from_room
 
+
+/* ════ EDIT ROOM ═════════════════════════════════════════ */
+const ROOM_COLORS=['#5288c1','#00B894','#E17055','#6C5CE7','#E84393','#00CEC9','#F39C12','#9B59B6'];
+let _editRoomPendingAv=null;
+let _editRoomId=null;
+
+function openEditRoom(){
+  if(!S.roomId) return;
+  const room=S.rooms.find(r=>r.id===S.roomId);
+  if(!room) return;
+  _editRoomId=S.roomId; _editRoomPendingAv=null;
+  document.getElementById('edit-room-name').value=room.name||'';
+  document.getElementById('edit-room-desc').value=room.description||'';
+  // Аватарка
+  const av=document.getElementById('edit-room-av');
+  if(room.avatar_img){av.style.backgroundImage=`url(${room.avatar_img})`;av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.textContent='';}
+  else{av.style.backgroundImage='';av.style.background=room.avatar_color||'var(--acc)';av.textContent=ini(room.name||'?');}
+  // Цвета
+  const cc=document.getElementById('room-av-colors');
+  cc.innerHTML=ROOM_COLORS.map(c=>`<div style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===(room.avatar_color||'')?"#fff":"transparent"}" onclick="pickRoomColor('${c}')"></div>`).join('');
+  openM('m-edit-room');
+}
+
+function trigRoomAv(){document.getElementById('room-av-fi').click();}
+
+function prevRoomAv(input){
+  if(!input.files.length) return;
+  const file=input.files[0];
+  if(file.size>2*1024*1024){toast('Фото max 2 МБ','err');return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    _editRoomPendingAv=e.target.result;
+    const av=document.getElementById('edit-room-av');
+    av.style.backgroundImage=`url(${_editRoomPendingAv})`;
+    av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.textContent='';
+  };
+  r.readAsDataURL(file);
+}
+
+function pickRoomColor(c){
+  _editRoomPendingAv=''; // сброс фото
+  const av=document.getElementById('edit-room-av');
+  av.style.backgroundImage='';av.style.background=c;
+  const room=S.rooms.find(r=>r.id===_editRoomId);
+  av.textContent=ini(room?room.name:'?');
+  // Подсвечиваем выбранный
+  document.querySelectorAll('#room-av-colors div').forEach(d=>d.style.borderColor=d.style.background===c?'#fff':'transparent');
+}
+
+async function saveRoom(){
+  if(!_editRoomId) return;
+  const name=document.getElementById('edit-room-name').value.trim();
+  const desc=document.getElementById('edit-room-desc').value.trim();
+  if(!name){toast('Введите название','err');return;}
+  // Строим query params
+  let params={name,description:desc||''};
+  if(_editRoomPendingAv!==null) params.avatar_img=_editRoomPendingAv||'';
+  // Для цвета берём из av.style
+  const av=document.getElementById('edit-room-av');
+  if(av.style.backgroundImage==='') params.avatar_color=av.style.background||'#5288c1';
+  try{
+    const r=await http('PATCH',`/api/rooms/${_editRoomId}`,null,params);
+    const idx=S.rooms.findIndex(room=>room.id===_editRoomId);
+    if(idx!==-1) S.rooms[idx]=r;
+    renderRooms();updChatHead();
+    closeM('m-edit-room');toast('Сохранено!','ok');
+  }catch(e){toast(e.message,'err');}
+}
+
+function onWsRoomUpd(room){
+  if(!room) return;
+  const idx=S.rooms.findIndex(r=>r.id===room.id);
+  if(idx!==-1){S.rooms[idx]=room;}
+  renderRooms();
+  if(S.roomId===room.id) updChatHead();
+}
 </script>
 </body>
 </html>
