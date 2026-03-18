@@ -519,49 +519,33 @@ async def upload(rid:int, token:str=Query(...), file:UploadFile=File(...),
     await manager.broadcast(ids,{"type":"new_message","message":msg_dict(m)})
     return msg_dict(m)
 
-@app.get("/api/media/{msg_id}")
-async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Session=Depends(get_db)):
-    """Прокси для получения файла. Для аудио/видео/изображений — стримим содержимое напрямую."""
-    from fastapi.responses import RedirectResponse, Response, StreamingResponse
+@app.get("/api/media/{msg_id}/url")
+async def get_media_url(msg_id:int, token:str=Query(...), db:Session=Depends(get_db)):
+    """Возвращает прямую ссылку на файл (для аудио/видео/изображений)."""
     auth(token,db)
     msg=db.get(models.Message,msg_id)
     if not msg or not msg.media_data: raise HTTPException(404,"Медиа не найдено")
+    if msg.media_data.startswith("yadisk:"):
+        public_key=msg.media_data[7:]
+        download_url=await yadisk_get_download_url(public_key)
+        if not download_url: raise HTTPException(503,"Не удалось получить ссылку с Яндекс Диска")
+        return {"url": download_url, "mime": msg.media_mime}
+    else:
+        # base64 — возвращаем data URL
+        return {"url": f"data:{msg.media_mime};base64,{msg.media_data}", "mime": msg.media_mime}
 
+@app.get("/api/media/{msg_id}")
+async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Session=Depends(get_db)):
+    """Редирект на файл (для скачивания и совместимости)."""
+    from fastapi.responses import RedirectResponse, Response
+    auth(token,db)
+    msg=db.get(models.Message,msg_id)
+    if not msg or not msg.media_data: raise HTTPException(404,"Медиа не найдено")
     if msg.media_data.startswith("yadisk:"):
         public_key=msg.media_data[7:]
         download_url=await yadisk_get_download_url(public_key)
         if not download_url: raise HTTPException(503,"Не удалось получить файл с Яндекс Диска")
-
-        mime = msg.media_mime or "application/octet-stream"
-        # Для аудио, видео и изображений — качаем и отдаём напрямую
-        # чтобы браузер мог стримить без проблем с истекающими редиректами
-        is_streamable = (
-            mime.startswith("audio/") or
-            mime.startswith("video/") or
-            mime.startswith("image/")
-        )
-        if is_streamable:
-            try:
-                async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
-                    r = await c.get(download_url)
-                    if r.status_code != 200:
-                        raise HTTPException(502, "Ошибка получения файла")
-                    fname = msg.content or "file"
-                    disposition = "attachment" if dl else "inline"
-                    return Response(
-                        content=r.content,
-                        media_type=mime,
-                        headers={"Content-Disposition": f'{disposition}; filename="{fname}"',
-                                 "Cache-Control": "public, max-age=3600"}
-                    )
-            except HTTPException:
-                raise
-            except Exception as e:
-                logger.error(f"YaDisk proxy stream error: {e}")
-                raise HTTPException(502, "Ошибка получения файла")
-        else:
-            # Для файлов-вложений — редирект достаточен
-            return RedirectResponse(url=download_url, status_code=302)
+        return RedirectResponse(url=download_url, status_code=302)
     else:
         raw=base64.b64decode(msg.media_data)
         fname = msg.content or "file"
