@@ -348,14 +348,16 @@ async def vapid_key():
 @app.post("/api/push/subscribe")
 async def push_subscribe(body:dict, token:str=Query(...), db:Session=Depends(get_db)):
     me=auth(token,db)
-    # Сохраняем подписку в БД
     sub_json=json.dumps(body)
+    endpoint=body.get("endpoint","")
+    if not endpoint:
+        raise HTTPException(400,"Нет endpoint в подписке")
     db.execute(
         sql_text(
-            "INSERT INTO push_subscriptions(user_id,subscription) VALUES(:uid,:sub) "
+            "INSERT INTO push_subscriptions(user_id,endpoint,subscription) VALUES(:uid,:ep,:sub) "
             "ON CONFLICT(user_id,endpoint) DO UPDATE SET subscription=:sub"
         ),
-        {"uid":me.id,"sub":sub_json,"endpoint":body.get("endpoint","")}
+        {"uid":me.id,"ep":endpoint,"sub":sub_json}
     )
     db.commit()
     return {"ok":True}
