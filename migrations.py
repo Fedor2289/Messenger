@@ -34,6 +34,8 @@ def _run_migrations():
         _col(conn, "rooms", "room_type",     "VARCHAR(16) DEFAULT 'chat'")
         _col(conn, "rooms", "created_by",    "INTEGER")
         _col(conn, "rooms", "pinned_msg_id", "INTEGER")
+        _col(conn, "rooms", "avatar_img",    "TEXT")
+        _col(conn, "rooms", "avatar_color",  "VARCHAR(7)")
 
         # Старая колонка is_group — убираем NOT NULL чтобы новый код мог её не передавать
         _exec(conn, "ALTER TABLE rooms ALTER COLUMN is_group SET DEFAULT FALSE")

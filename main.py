@@ -505,6 +505,28 @@ async def _call_ai(messages:list) -> str:
     return "⚠️ ИИ временно недоступен. Проверьте API ключ в переменных окружения Railway (GROQ_API_KEY или CEREBRAS_API_KEY)."
 
 
+@app.patch("/api/rooms/{rid}")
+async def update_room(rid:int, token:str=Query(...), db:Session=Depends(get_db),
+                      name:str=Query(None), description:str=Query(None),
+                      avatar_img:str=Query(None), avatar_color:str=Query(None)):
+    me=auth(token,db)
+    room=db.get(models.Room,rid)
+    if not room: raise HTTPException(404,"Не найдено")
+    mb=db.query(models.RoomMember).filter_by(room_id=rid,user_id=me.id).first()
+    if not mb or not mb.is_admin: raise HTTPException(403,"Только администратор")
+    if name is not None: room.name=name
+    if description is not None: room.description=description
+    if avatar_img is not None:
+        if avatar_img and len(avatar_img)>3_000_000: raise HTTPException(400,"Фото слишком большое")
+        room.avatar_img=avatar_img or None
+    if avatar_color is not None: room.avatar_color=avatar_color
+    db.commit()
+    r=room_dict(room,me.id,db)
+    ids=[m.user_id for m in db.query(models.RoomMember).filter_by(room_id=rid).all()]
+    await manager.broadcast(ids,{"type":"room_updated","room":r})
+    return r
+
+
 @app.post("/api/rooms/{rid}/members/add")
 async def add_member(rid:int, user_id:int=Query(...), token:str=Query(...), db:Session=Depends(get_db)):
     me=auth(token,db)
