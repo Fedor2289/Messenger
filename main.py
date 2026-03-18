@@ -288,6 +288,10 @@ async def del_room(rid:int, token:str=Query(...), db:Session=Depends(get_db)):
     if rt=="chat": raise HTTPException(400,"Личные чаты нельзя удалять")
     if room.created_by and room.created_by!=me.id: raise HTTPException(403,"Только создатель")
     ids=[m.user_id for m in room.members]
+    # Удаляем участников вручную сначала — CASCADE в Python ORM
+    db.query(models.RoomMember).filter_by(room_id=rid).delete(synchronize_session=False)
+    # Удаляем сообщения (и реакции через CASCADE в БД)
+    db.query(models.Message).filter_by(room_id=rid).delete(synchronize_session=False)
     db.delete(room); db.commit()
     await manager.broadcast(ids,{"type":"room_deleted","room_id":rid})
     return {"ok":True}
