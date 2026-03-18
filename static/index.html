@@ -2331,22 +2331,30 @@ async function togglePush(){
 }
 
 async function subscribePush(){
-  if(!_swReg) return false;
+  if(!_swReg) {toast('Service Worker не зарегистрирован','err');return false;}
   try{
     const permResult=await Notification.requestPermission();
-    if(permResult!=='granted'){toast('Разрешите уведомления в браузере','err');return false;}
-    // Получаем VAPID public key
-    const {publicKey}=await http('GET','/api/push/vapid-key');
-    if(!publicKey){toast('Push не настроен на сервере','err');return false;}
+    if(permResult==='denied'){toast('Уведомления заблокированы в настройках браузера','err');return false;}
+    if(permResult!=='granted'){toast('Нужно разрешить уведомления','err');return false;}
+    const resp=await http('GET','/api/push/vapid-key');
+    const publicKey=resp.publicKey;
+    if(!publicKey){
+      toast('Push не настроен: добавь VAPID_PUBLIC_KEY и VAPID_PRIVATE_KEY в переменные Railway','err');
+      return false;
+    }
     const conv=base64UrlToUint8(publicKey);
-    const sub=await _swReg.pushManager.subscribe({
-      userVisibleOnly:true,
-      applicationServerKey:conv
-    });
+    let sub;
+    try{
+      sub=await _swReg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:conv});
+    }catch(e){
+      toast('Браузер отклонил подписку: '+e.message,'err');return false;
+    }
     await http('POST','/api/push/subscribe',sub.toJSON());
     toast('Push-уведомления включены','ok');
     return true;
-  }catch(e){toast('Не удалось включить push: '+e.message,'err');return false;}
+  }catch(e){
+    toast('Push ошибка: '+e.message,'err');return false;
+  }
 }
 
 async function unsubscribePush(){
