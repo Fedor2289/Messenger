@@ -815,7 +815,7 @@ textarea.fi{resize:none}
     <div class="mbody">
       <div class="prof-av">
         <div class="prof-av-wrap" onclick="trigAv()">
-          <div class="av av72" id="prof-av-el">?</div>
+          <div class="av av72" id="prof-av-el" style="background:#5288c1"></div>
           <div class="prof-av-overlay"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMjMgMTlDMjMgMTkuNTMwNCAyMi43ODkzIDIwLjAzOTEgMjIuNDE0MiAyMC40MTQyQzIyLjAzOTEgMjAuNzg5MyAyMS41MzA0IDIxIDIxIDIxSDNDMi40Njk1NyAyMSAxLjk2MDg2IDIwLjc4OTMgMS41ODU3OSAyMC40MTQyQzEuMjEwNzEgMjAuMDM5MSAxIDE5LjUzMDQgMSAxOVY4QzEgNy40Njk1NyAxLjIxMDcxIDYuOTYwODYgMS41ODU3OSA2LjU4NTc5QzEuOTYwODYgNi4yMTA3MSAyLjQ2OTU3IDYgMyA2SDdMOSAzSDE1TDE3IDZIMjFDMjEuNTMwNCA2IDIyLjAzOTEgNi4yMTA3MSAyMi40MTQyIDYuNTg1NzlDMjIuNzg5MyA2Ljk2MDg2IDIzIDcuNDY5NTcgMjMgOFYxOVoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iMTIiIGN5PSIxMyIgcj0iNCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPg==" width="24" height="24" style="display:inline-block;vertical-align:middle" alt=""></div>
         </div>
         <div style="font-size:12px;color:var(--t2)">Нажмите для загрузки фото</div>
@@ -1533,6 +1533,8 @@ function renderMsgs(msgs,prepend=false){
     lastSndr=msg.sender_id;
   }
   if(prepend)c.scrollTop+=c.scrollHeight-prevH;
+  // Автозагрузка всех yadisk-медиа
+  autoLoadMedia(c);
 }
 
 function addLM(){
@@ -1624,12 +1626,12 @@ function buildContent(msg){
   if(t==='image'){
     const src=mediaSrc();
     if(src) return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="${esc(msg.content)}">`;
-    return `<img class="msg-img" data-mid="${_mid}" onclick="loadMediaImg(this,'${_mid}')" alt="${esc(msg.content)}" style="cursor:pointer;min-width:100px;min-height:80px;background:var(--bg3);display:block">`;
+    return `<img class="msg-img" data-mid="${_mid}" alt="${esc(msg.content)}" style="min-width:100px;min-height:80px;background:var(--bg3);display:block" onload="this.style.background=''" onerror="this.style.background='var(--bg3)'">`;
   }
   if(t==='gif'){
     const src=mediaSrc();
     if(src) return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;
-    return `<img class="msg-gif" data-mid="${_mid}" onclick="loadMediaImg(this,'${_mid}')" alt="GIF" style="cursor:pointer;min-width:100px;min-height:80px;background:var(--bg3);display:block">`;
+    return `<img class="msg-gif" data-mid="${_mid}" alt="GIF" style="min-width:100px;min-height:80px;background:var(--bg3);display:block" onload="this.style.background=''" onerror="this.style.background='var(--bg3)'">`;
   }
   if(t==='video'){
     const src=mediaSrc();
@@ -1637,7 +1639,9 @@ function buildContent(msg){
     return `<div class="vp-load" data-mid="${_mid}" data-mime="${msg.media_mime||''}" onclick="loadVideoEl(this)" style="width:220px;height:130px;background:var(--bg3);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/><polygon points="10 8 16 12 10 16" fill="rgba(255,255,255,.7)"/></svg></div>`;
   }
   if(t==='voice'){const wid='vp-'+msg.id;
-    return `<div class="vp"><button class="vp-btn" onclick="vpToggle('${wid}','${_mid}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="vp-track"><div class="vp-waves">${Array(18).fill(0).map((_,i)=>`<div class="vp-wave" style="height:${4+Math.abs(Math.sin(i*0.7))*14}px"></div>`).join('')}</div><div class="vp-bar" onclick="vpSeek(event,'${wid}')"><div class="vp-prog" id="prog-${wid}"></div></div><div class="vp-times"><span id="cur-${wid}">0:00</span><span id="dur-${wid}">—</span></div></div><audio id="${wid}" onended="vpEnd('${wid}')" ontimeupdate="vpTick('${wid}')" onloadedmetadata="vpMeta('${wid}')"></audio></div>`;
+    const src=mediaSrc();
+    const audioAttr=src?`src="${src}"`:`data-mid="${_mid}"`;
+    return `<div class="vp"><button class="vp-btn" onclick="vpToggle('${wid}','${_mid}','${src?'1':'0'}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="vp-track"><div class="vp-waves">${Array(18).fill(0).map((_,i)=>`<div class="vp-wave" style="height:${4+Math.abs(Math.sin(i*0.7))*14}px"></div>`).join('')}</div><div class="vp-bar" onclick="vpSeek(event,'${wid}')"><div class="vp-prog" id="prog-${wid}"></div></div><div class="vp-times"><span id="cur-${wid}">0:00</span><span id="dur-${wid}">—</span></div></div><audio id="${wid}" ${audioAttr} onended="vpEnd('${wid}')" ontimeupdate="vpTick('${wid}')" onloadedmetadata="vpMeta('${wid}')"></audio></div>`;
   }
   if(t==='file'){
     const dlUrl=msg.media_data&&msg.media_data.startsWith('yadisk:')
@@ -1666,7 +1670,9 @@ function appendMsg(msg){
   const lastSep=c.querySelector('.date-sep:last-of-type');
   if(!lastSep||lastSep.querySelector('span').textContent!==ds){const sep=document.createElement('div');sep.className='date-sep';sep.innerHTML=`<span>${ds}</span>`;c.appendChild(sep);}
   const room=S.rooms.find(r=>r.id===S.roomId);
-  c.appendChild(buildMsgEl(msg,consec,room&&(room.room_type==='group'||room.room_type==='channel')));
+  const el=buildMsgEl(msg,consec,room&&(room.room_type==='group'||room.room_type==='channel'));
+  c.appendChild(el);
+  autoLoadMedia(el);
 }
 
 function scrollBot(smooth=true){const c=document.getElementById('msgs');c.scrollTo({top:c.scrollHeight,behavior:smooth?'smooth':'instant'});}
@@ -1871,25 +1877,41 @@ async function _getMediaUrl(msgId){
   _mediaUrlCache[msgId]=r.url;
   return r.url;
 }
-async function vpToggle(wid,msgId){
+async function vpToggle(wid,msgId,hasLocalSrc='0'){
   const a=document.getElementById(wid);if(!a)return;
   const btn=a.closest('.vp')?.querySelector('.vp-btn');if(!btn)return;
-  if(!a.src||a.src===window.location.href){
-    // Ещё не загружено — получаем прямую ссылку с Яндекс.Диска
-    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="8" stroke-dasharray="50" stroke-dashoffset="25"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur=".8s" repeatCount="indefinite"/></circle></svg>';
-    try{
-      const url=await _getMediaUrl(msgId);
-      a.src=url; a.load();
-      await new Promise((res,rej)=>{a.oncanplay=res;a.onerror=rej;setTimeout(rej,10000);});
-    }catch(e){btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';return;}
+  // Если src уже есть (base64) — просто играем
+  if(hasLocalSrc==='1'||( a.src && a.src!==window.location.href && !a.src.endsWith('/') )){
+    if(a.paused){a.play().catch(()=>{});btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';}
+    else{a.pause();btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';}
+    return;
   }
-  if(a.paused){a.play().catch(()=>{});btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';}
-  else{a.pause();btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';}
+  // Yadisk — получаем прямую ссылку
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="8" stroke-dasharray="50" stroke-dashoffset="25"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur=".8s" repeatCount="indefinite"/></circle></svg>';
+  try{
+    const url=await _getMediaUrl(msgId);
+    a.src=url; a.load();
+    await new Promise((res,rej)=>{a.oncanplay=res;a.onerror=rej;setTimeout(rej,10000);});
+    a.play().catch(()=>{});
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+  }catch(e){btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';}
 }
 async function loadMediaImg(el,msgId){
   el.onclick=null;
   try{const url=await _getMediaUrl(msgId);el.src=url;el.onclick=()=>openLB(url);}
   catch(e){el.alt='Ошибка загрузки';}
+}
+// Автозагрузка yadisk-медиа в контейнере
+function autoLoadMedia(container){
+  container.querySelectorAll('img[data-mid]').forEach(img=>{
+    const mid=img.dataset.mid;
+    if(!mid||img.src) return;
+    _getMediaUrl(mid).then(url=>{
+      img.src=url;
+      img.onclick=()=>openLB(url);
+      img.style.cursor='pointer';
+    }).catch(()=>{});
+  });
 }
 async function loadVideoEl(el){
   el.onclick=null;
@@ -2042,7 +2064,10 @@ async function saveProfile(){
   const bio_v=document.getElementById('prof-bio').value.trim();
   const body={display_name:dn_v||null,bio:bio_v||null,avatar_color:S.me.avatar_color};
   if(S._pendingAv!==null) body.avatar_img=S._pendingAv||'';
-  try{const u=await http('PATCH','/api/me',body);S.me=u;updMyInfo();updChatHead();await loadRooms();closeM('m-prof');toast('Профиль сохранён','ok');}catch(e){toast(e.message,'err');}
+  try{const u=await http('PATCH','/api/me',body);S.me=u;updMyInfo();updChatHead();
+    // обновляем данные юзера в комнатах без перезагрузки
+    S.rooms.forEach(r=>r.members.forEach(m=>{if(m.id===u.id){m.display_name=u.display_name;m.avatar_img=u.avatar_img;m.avatar_color=u.avatar_color;}}));
+    renderRooms();closeM('m-prof');toast('Профиль сохранён','ok');}catch(e){toast(e.message,'err');}
 }
 function showUserProfile(uid){
   if(!uid||uid===0) return; // AI
