@@ -893,6 +893,23 @@ textarea.fi{resize:none}
             <span>Уведомления</span>
             <label class="toggle"><input type="checkbox" id="notif-toggle" onchange="toggleNotif(this.checked)" checked><span class="toggle-sl"></span></label>
           </div>
+          <div class="settings-row" id="push-row">
+            <span style="font-size:13px">Push (фон)</span>
+            <button class="btn btn-ghost" id="push-btn" onclick="togglePush()" style="padding:4px 10px;font-size:12px">Включить</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-title">🔔 Мелодия звонка</div>
+          <div class="settings-row">
+            <span id="ringtone-name" style="font-size:13px;color:var(--t2)">Стандартная</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost" onclick="previewRingtone()" style="padding:4px 10px;font-size:12px">▶</button>
+              <button class="btn btn-ghost" onclick="document.getElementById('ringtone-fi').click()" style="padding:4px 10px;font-size:12px">Загрузить</button>
+              <button class="btn btn-ghost" id="ringtone-reset-btn" onclick="resetRingtone()" style="padding:4px 10px;font-size:12px;display:none">✕</button>
+            </div>
+          </div>
+          <input type="file" id="ringtone-fi" accept="audio/*" style="display:none" onchange="uploadRingtone(this)">
+          <div id="ringtone-upload-status" style="font-size:12px;color:var(--t3);margin-top:4px"></div>
         </div>
         <div class="settings-section">
           <div class="settings-title"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTggOEMxOCA2LjQwODcgMTcuMzY3OSA0Ljg4MjU4IDE2LjI0MjYgMy43NTczNkMxNS4xMTc0IDIuNjMyMTQgMTMuNTkxMyAyIDEyIDJDMTAuNDA4NyAyIDguODgyNTggMi42MzIxNCA3Ljc1NzM2IDMuNzU3MzZDNi42MzIxNCA0Ljg4MjU4IDYgNi40MDg3IDYgOEM2IDE1IDMgMTcgMyAxN0gyMUMyMSAxNyAxOCAxNSAxOCA4WiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xMy43MyAyMUMxMy41NTQyIDIxLjMwMzEgMTMuMzAxOSAyMS41NTQ3IDEyLjk5ODIgMjEuNzI5NUMxMi42OTQ2IDIxLjkwNDQgMTIuMzUwNCAyMS45OTY1IDEyIDIxLjk5NjVDMTEuNjQ5NiAyMS45OTY1IDExLjMwNTQgMjEuOTA0NCAxMS4wMDE4IDIxLjcyOTVDMTAuNjk4MiAyMS41NTQ3IDEwLjQ0NTggMjEuMzAzMSAxMC4yNyAyMSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNzUpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="14" height="14" style="display:inline-block;vertical-align:middle" alt=""> Уведомления</div>
@@ -1199,6 +1216,7 @@ async function boot(){
   await loadRooms();
   connectWS();
   checkAdminStatus();
+  initSW();  // Service Worker + Push
   // Автосоздание AI-чата если его нет
   if(!S.rooms.find(r=>r.room_type==='ai')){
     try{
@@ -2216,8 +2234,139 @@ function toggleVideo(){
 }
 
 let ringtoneInt=null;
-function playRingtone(){stopRingtone();ringtoneInt=setInterval(()=>playBeep(880),1200);}
-function stopRingtone(){clearInterval(ringtoneInt);}
+let _ringtoneAudio=null;  // кастомный аудио элемент
+let _ringtoneMediaId=localStorage.getItem('ringtone_media_id')||'';
+
+function playRingtone(){
+  stopRingtone();
+  if(_ringtoneMediaId){
+    _ringtoneAudio=new Audio(`${API}/api/media/${_ringtoneMediaId}?token=${S.token}`);
+    _ringtoneAudio.loop=true;
+    _ringtoneAudio.play().catch(()=>{_fallbackRingtone();});
+  } else {
+    _fallbackRingtone();
+  }
+}
+function _fallbackRingtone(){
+  ringtoneInt=setInterval(()=>playBeep(880),1200);
+}
+function stopRingtone(){
+  clearInterval(ringtoneInt);
+  if(_ringtoneAudio){_ringtoneAudio.pause();_ringtoneAudio.currentTime=0;_ringtoneAudio=null;}
+}
+function previewRingtone(){
+  if(_ringtoneMediaId){
+    const a=new Audio(`${API}/api/media/${_ringtoneMediaId}?token=${S.token}`);
+    a.play().catch(()=>{});
+    setTimeout(()=>a.pause(),3000);
+  } else {
+    playBeep(880);setTimeout(()=>playBeep(660),400);
+  }
+}
+function resetRingtone(){
+  _ringtoneMediaId='';
+  localStorage.removeItem('ringtone_media_id');
+  document.getElementById('ringtone-name').textContent='Стандартная';
+  document.getElementById('ringtone-reset-btn').style.display='none';
+  toast('Мелодия сброшена');
+}
+async function uploadRingtone(input){
+  if(!input.files.length) return;
+  const file=input.files[0];
+  if(file.size>20*1024*1024){toast('Максимум 20 МБ','err');return;}
+  const st=document.getElementById('ringtone-upload-status');
+  st.textContent='Загрузка...';
+  const fd=new FormData();fd.append('file',file);
+  try{
+    const u=new URL(API+'/api/upload/ringtone');
+    u.searchParams.set('token',S.token);
+    const r=await fetch(u,{method:'POST',body:fd});
+    if(!r.ok){const e=await r.json().catch(()=>({detail:'Ошибка'}));throw new Error(e.detail);}
+    const d=await r.json();
+    _ringtoneMediaId=String(d.media_id);
+    localStorage.setItem('ringtone_media_id',_ringtoneMediaId);
+    document.getElementById('ringtone-name').textContent=file.name;
+    document.getElementById('ringtone-reset-btn').style.display='';
+    st.textContent='✓ Загружено';
+    setTimeout(()=>st.textContent='',2000);
+    toast('Мелодия сохранена','ok');
+  }catch(e){st.textContent='Ошибка: '+e.message;toast(e.message,'err');}
+}
+
+/* ═══ SERVICE WORKER + PUSH NOTIFICATIONS ══════════════════ */
+let _swReg=null;
+let _pushEnabled=localStorage.getItem('push_enabled')==='1';
+
+async function initSW(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)) return;
+  try{
+    _swReg=await navigator.serviceWorker.register('/sw.js',{scope:'/'});
+    // Слушаем postMessage от SW (open_room)
+    navigator.serviceWorker.addEventListener('message',e=>{
+      if(e.data&&e.data.type==='open_room') openRoom(e.data.room_id);
+    });
+    if(_pushEnabled) await subscribePush();
+    updatePushBtn();
+  }catch(e){console.warn('SW register failed:',e);}
+}
+
+function updatePushBtn(){
+  const btn=document.getElementById('push-btn');
+  if(!btn) return;
+  btn.textContent=_pushEnabled?'Включено ✓':'Включить';
+  btn.className='btn '+(_pushEnabled?'btn-p':'btn-ghost');
+  btn.style.cssText='padding:4px 10px;font-size:12px';
+}
+
+async function togglePush(){
+  if(_pushEnabled){
+    await unsubscribePush();
+    _pushEnabled=false;
+    localStorage.setItem('push_enabled','0');
+  } else {
+    const ok=await subscribePush();
+    if(ok){_pushEnabled=true;localStorage.setItem('push_enabled','1');}
+  }
+  updatePushBtn();
+}
+
+async function subscribePush(){
+  if(!_swReg) return false;
+  try{
+    const permResult=await Notification.requestPermission();
+    if(permResult!=='granted'){toast('Разрешите уведомления в браузере','err');return false;}
+    // Получаем VAPID public key
+    const {publicKey}=await http('GET','/api/push/vapid-key');
+    if(!publicKey){toast('Push не настроен на сервере','err');return false;}
+    const conv=base64UrlToUint8(publicKey);
+    const sub=await _swReg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:conv
+    });
+    await http('POST','/api/push/subscribe',sub.toJSON());
+    toast('Push-уведомления включены','ok');
+    return true;
+  }catch(e){toast('Не удалось включить push: '+e.message,'err');return false;}
+}
+
+async function unsubscribePush(){
+  if(!_swReg) return;
+  try{
+    const sub=await _swReg.pushManager.getSubscription();
+    if(sub){
+      const ep=encodeURIComponent(sub.endpoint);
+      await http('DELETE',`/api/push/unsubscribe`,null,{endpoint:sub.endpoint});
+      await sub.unsubscribe();
+    }
+    toast('Push-уведомления отключены');
+  }catch(e){}
+}
+
+function base64UrlToUint8(b64){
+  const pad=b64+(b64.length%4?'='.repeat(4-b64.length%4):'');
+  const raw=atob(pad.replace(/-/g,'+').replace(/_/g,'/'));
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
 
 function findUserById(uid){for(const r of S.rooms){const m=r.members.find(m=>m.id===uid);if(m)return m;}return null;}
 
@@ -2233,14 +2382,20 @@ function playBeep(freq=880){
 
 /* ════ SETTINGS ══════════════════════════════════ */
 function openSettings(){
-  // Показываем секцию админа если это admin
   const adm=document.getElementById('admin-section');
   if(adm) adm.style.display=isAdmin()?'block':'none';
-  // Загружаем сохранённые настройки
   const fs=localStorage.getItem('fontSize')||'14';
   const th=localStorage.getItem('theme')||'dark';
   document.getElementById('font-size-sel').value=fs;
   document.getElementById('theme-sel').value=th;
+  // Push UI
+  updatePushBtn();
+  const pushRow=document.getElementById('push-row');
+  if(pushRow) pushRow.style.display=('serviceWorker' in navigator&&'PushManager' in window)?'flex':'none';
+  // Ringtone UI
+  if(_ringtoneMediaId){
+    document.getElementById('ringtone-reset-btn').style.display='';
+  }
   openM('m-settings');
 }
 function setFontSize(v){
