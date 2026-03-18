@@ -449,6 +449,28 @@ textarea.fi{resize:none}
   animation:msgPop .22s ease;white-space:nowrap;text-align:center}
 .toast.err{border-color:rgba(231,76,60,.4);background:rgba(231,76,60,.15);color:#ff6b6b}
 .toast.ok{border-color:rgba(77,205,94,.4);background:rgba(77,205,94,.1);color:var(--grn)}
+
+/* ── SETTINGS ── */
+.settings-section{background:var(--bg2);border-radius:var(--rs);padding:14px;display:flex;flex-direction:column;gap:8px}
+.settings-title{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.settings-btn{background:var(--bg3);border:none;border-radius:var(--rs);padding:11px 14px;color:var(--t1);
+  font-size:14px;cursor:pointer;text-align:left;font-family:inherit;transition:background var(--tr)}
+.settings-btn:hover{background:var(--bg-hover,#354a5e)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:14px}
+.settings-sel{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rs);
+  color:var(--t1);padding:6px 10px;font-size:13px;outline:none;font-family:inherit}
+.toggle{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-sl{position:absolute;cursor:pointer;inset:0;background:var(--bg3);border-radius:12px;transition:.3s}
+.toggle-sl::before{content:"";position:absolute;width:18px;height:18px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-sl{background:var(--acc)}
+.toggle input:checked+.toggle-sl::before{transform:translateX(18px)}
+/* Admin panel */
+.adm-user-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--rs);
+  border-bottom:1px solid var(--brd)}
+.adm-user-row:last-child{border-bottom:none}
+.adm-actions{display:flex;gap:4px;margin-left:auto}
 .spinner{width:22px;height:22px;border:2.5px solid rgba(255,255,255,.15);
   border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;margin:auto}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -529,6 +551,7 @@ textarea.fi{resize:none}
         <div style="font-size:11px;color:var(--grn);display:flex;align-items:center;gap:4px"><span style="width:5px;height:5px;background:var(--grn);border-radius:50%;display:inline-block"></span>онлайн</div>
       </div>
       <span class="conn-bad" id="conn-bad">нет связи</span>
+      <button class="ib" title="Настройки" onclick="openSettings()">⚙️</button>
       <button class="ib" title="Новый чат / канал" onclick="openNewChat()">✏️</button>
     </div>
     <div class="srch"><div class="srin">
@@ -538,7 +561,6 @@ textarea.fi{resize:none}
     <div class="sb-tabs">
       <button class="sb-tab on" onclick="swSBTab('chats')">Чаты</button>
       <button class="sb-tab" onclick="swSBTab('channels')">Каналы</button>
-      <button class="sb-tab" onclick="openAIChat()">🤖 ИИ</button>
     </div>
     <div class="chatlist" id="chatlist">
       <div class="no-chats"><div class="ico">💬</div>Нажмите ✏️ чтобы начать</div>
@@ -556,7 +578,8 @@ textarea.fi{resize:none}
       <p>Выберите чат или начните новый</p>
       <div class="welcome-btns">
         <button class="btn btn-p" onclick="openNewChat()">✏️ Новый чат</button>
-        <button class="btn btn-ghost" onclick="openAIChat()">🤖 Чат с ИИ</button>
+        <button class="btn btn-ghost" onclick="openAIChat()">🤖 ИИ чат</button>
+        <button class="btn btn-ghost" onclick="openSupport()">🆘 Поддержка</button>
       </div>
     </div>
     <div id="active-chat" style="display:none;flex-direction:column;flex:1;min-height:0">
@@ -594,8 +617,7 @@ textarea.fi{resize:none}
         </div>
         <button class="ib" onclick="cancelReply()">✕</button>
       </div>
-      <!-- AI input hint -->
-      <div class="ai-input-bar hidden" id="ai-hint">🤖 Напишите сообщение ИИ-ассистенту</div>
+
       <!-- Channel readonly bar -->
       <div class="ch-join-bar hidden" id="ch-join-bar">
         <span style="color:var(--t2);font-size:13px">📢 Только администраторы могут писать</span>
@@ -707,6 +729,107 @@ textarea.fi{resize:none}
         <input class="si" style="width:100%" id="ch-srch" type="text"
                placeholder="Поиск каналов..." oninput="srchChannels(this.value)"></div>
       <div id="channels-list"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: SETTINGS -->
+<div class="ov" id="m-settings" onclick="closeOv(event,'m-settings')">
+  <div class="modal">
+    <div class="mhd"><span class="mt">⚙️ Настройки</span><button class="ib" onclick="closeM('m-settings')">✕</button></div>
+    <div class="mbody">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="settings-section">
+          <div class="settings-title">👤 Аккаунт</div>
+          <button class="settings-btn" onclick="openProfile();closeM('m-settings')">Редактировать профиль</button>
+          <button class="settings-btn" onclick="openSupport();closeM('m-settings')">🆘 Связаться с поддержкой</button>
+        </div>
+        <div class="settings-section">
+          <div class="settings-title">🎨 Интерфейс</div>
+          <div class="settings-row">
+            <span>Размер текста</span>
+            <select class="settings-sel" onchange="setFontSize(this.value)" id="font-size-sel">
+              <option value="13">Маленький</option>
+              <option value="14" selected>Средний</option>
+              <option value="16">Большой</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <span>Тема</span>
+            <select class="settings-sel" onchange="setTheme(this.value)" id="theme-sel">
+              <option value="dark" selected>Тёмная</option>
+              <option value="darker">Очень тёмная</option>
+              <option value="blue">Синяя</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <span>Уведомления</span>
+            <label class="toggle"><input type="checkbox" id="notif-toggle" onchange="toggleNotif(this.checked)" checked><span class="toggle-sl"></span></label>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-title">🔔 Уведомления</div>
+          <div class="settings-row">
+            <span>Звук сообщений</span>
+            <label class="toggle"><input type="checkbox" id="sound-toggle" onchange="toggleSound(this.checked)" checked><span class="toggle-sl"></span></label>
+          </div>
+        </div>
+        <div class="settings-section" id="admin-section" style="display:none">
+          <div class="settings-title">🛡️ Администрирование</div>
+          <button class="settings-btn" onclick="openAdminPanel();closeM('m-settings')">Открыть панель админа</button>
+        </div>
+        <div class="settings-section" style="margin-top:8px">
+          <button class="btn btn-danger btn-full" onclick="logout()">🚪 Выйти из аккаунта</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADMIN PANEL -->
+<div class="ov" id="m-admin" onclick="closeOv(event,'m-admin')">
+  <div class="modal" style="max-width:520px">
+    <div class="mhd"><span class="mt">🛡️ Панель администратора</span><button class="ib" onclick="closeM('m-admin')">✕</button></div>
+    <div class="mbody">
+      <div class="mtabs">
+        <button class="mtab on" onclick="swAdminTab('users')">Пользователи</button>
+        <button class="mtab" onclick="swAdminTab('rooms')">Чаты</button>
+        <button class="mtab" onclick="swAdminTab('msg')">Написать</button>
+      </div>
+      <div id="adm-users">
+        <div class="srch-in" style="margin-bottom:10px">
+          <span class="sico">🔍</span>
+          <input class="si" style="width:100%" id="adm-srch" type="text" placeholder="Поиск пользователей..." oninput="filterAdmUsers(this.value)">
+        </div>
+        <div id="adm-users-list" style="max-height:320px;overflow-y:auto"></div>
+      </div>
+      <div id="adm-rooms" class="hidden">
+        <div id="adm-rooms-list" style="max-height:360px;overflow-y:auto"></div>
+      </div>
+      <div id="adm-msg" class="hidden">
+        <div class="fg"><label class="fl">Пользователь (ID или имя)</label>
+          <input class="fi" id="adm-msg-uid" type="text" placeholder="user_id или username..."></div>
+        <div class="fg"><label class="fl">Сообщение</label>
+          <textarea class="fi" id="adm-msg-text" rows="3" placeholder="Сообщение от администратора..."></textarea></div>
+        <button class="btn btn-p btn-full" onclick="adminSendMsg()">Отправить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MANAGE MEMBERS -->
+<div class="ov" id="m-mngmbrs" onclick="closeOv(event,'m-mngmbrs')">
+  <div class="modal">
+    <div class="mhd"><span class="mt">👥 Управление участниками</span><button class="ib" onclick="closeM('m-mngmbrs')">✕</button></div>
+    <div class="mbody">
+      <div id="mng-current" style="max-height:220px;overflow-y:auto;margin-bottom:16px"></div>
+      <div class="fg"><label class="fl">Добавить участника</label>
+        <div class="srch-in"><span class="sico">🔍</span>
+          <input class="si" style="width:100%" id="add-mbr-srch" type="text" placeholder="Найти пользователя..." oninput="srchAddMbr(this.value)">
+        </div>
+      </div>
+      <div id="add-mbr-list" class="ul"></div>
     </div>
   </div>
 </div>
@@ -882,6 +1005,13 @@ async function boot(){
   updMyInfo();
   await loadRooms();
   connectWS();
+  // Проверяем является ли admin
+  checkAdminStatus();
+}
+
+async function checkAdminStatus(){
+  try{await http('GET','/api/admin/users');S.me._is_admin=true;
+  const ne=document.getElementById('my-name');if(ne)ne.innerHTML=esc(dn(S.me))+' <span style="font-size:10px;color:var(--acc)">admin</span>';}catch{S.me._is_admin=false;}
 }
 function updMyInfo(){
   const u=S.me;
@@ -948,6 +1078,16 @@ function handleWS(d){
     case 'call_ice':      onCallIce(d); break;
     case 'call_end':      onCallEnd(d); break;
     case 'call_busy':     onCallBusy(d); break;
+    case 'added_to_room':
+      if(d.room&&!S.rooms.find(r=>r.id===d.room.id))S.rooms.unshift(d.room);
+      renderRooms();toast('Вас добавили в группу!','ok');break;
+    case 'removed_from_room':
+      if(S.roomId===d.room_id){goBack();document.getElementById('active-chat').style.display='none';
+        document.getElementById('welcome').classList.remove('hidden');S.roomId=null;}
+      S.rooms=S.rooms.filter(r=>r.id!==d.room_id);renderRooms();toast('Вас исключили из группы','err');break;
+    case 'member_removed':
+      if(d.room_id===S.roomId){const _mr=S.rooms.find(r=>r.id===d.room_id);
+        if(_mr){_mr.members=_mr.members.filter(m=>m.id!==d.user_id);updChatHead();}}break;
     case 'error': toast('⚠️ '+d.message,'err'); break;
   }
 }
@@ -1101,19 +1241,17 @@ async function openRoom(rid){
   // Show/hide input based on room type
   const iarea=document.getElementById('iarea');
   const chBar=document.getElementById('ch-join-bar');
-  const aiHint=document.getElementById('ai-hint');
   const rt=room?room.room_type:'chat';
   S.roomType=rt;
 
   if(rt==='channel'){
     const mb=room.members.find(m=>m.id===S.me.id);
-    if(mb&&mb.is_admin){iarea.style.display='flex';chBar.classList.add('hidden');aiHint.classList.add('hidden');}
-    else{iarea.style.display='none';chBar.classList.remove('hidden');aiHint.classList.add('hidden');}
+    if(mb&&mb.is_admin){iarea.style.display='flex';chBar.classList.add('hidden');}
+    else{iarea.style.display='none';chBar.classList.remove('hidden');}
   } else if(rt==='ai'){
-    iarea.style.display='flex';chBar.classList.add('hidden');aiHint.classList.remove('hidden');
-    document.getElementById('msginput').placeholder='Спросите ИИ...';
+    iarea.style.display='flex';chBar.classList.add('hidden');document.getElementById('msginput').placeholder='Написать сообщение...';
   } else{
-    iarea.style.display='flex';chBar.classList.add('hidden');aiHint.classList.add('hidden');
+    iarea.style.display='flex';chBar.classList.add('hidden');
     document.getElementById('msginput').placeholder='Написать сообщение...';
   }
 
@@ -1602,12 +1740,18 @@ async function showMembers(){
   if(!S.roomId) return;
   openM('m-mbrs');
   const room=S.rooms.find(r=>r.id===S.roomId);
+  const isGrp=room&&(room.room_type==='group'||room.room_type==='channel');
+  const amAdmin=room&&room.members.find(m=>m.id===S.me.id)?.is_admin;
   document.getElementById('mbrs-title').textContent=room?.room_type==='channel'?'Подписчики':'Участники';
   const el=document.getElementById('mbrs-list');
   el.innerHTML='<div class="spinner" style="padding:16px"></div>';
   try{
     const ms=await http('GET',`/api/rooms/${S.roomId}/members`);
     el.innerHTML=ms.map(m=>`<div class="ur">${avHtml(m,'av32')}<div class="uri"><div class="urn">${esc(dn(m))}${m.id===S.me.id?' <span style="color:var(--t3);font-size:11px">(вы)</span>':''}${m.is_admin?' <span style="color:var(--acc);font-size:11px">admin</span>':''}</div><div class="ust ${m.is_online?'on':''}">${m.is_online?'онлайн':(m.last_seen?`был ${fmtLastSeen(m.last_seen)}`:'оффлайн')}</div></div></div>`).join('');
+    // Кнопка управления для Admin
+    if(isGrp&&amAdmin){
+      el.innerHTML+=`<button class="btn btn-ghost btn-full" style="margin-top:14px" onclick="openManageMembers()">⚙️ Управление участниками</button>`;
+    }
   }catch(e){el.innerHTML=`<div style="color:var(--t3)">${esc(e.message)}</div>`;}
 }
 
@@ -1792,6 +1936,226 @@ function closeLB(){document.getElementById('lb').classList.remove('show');}
 /* ════ SOUND ══════════════════════════════════════ */
 function playBeep(freq=880){
   try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=freq;o.frequency.exponentialRampToValueAtTime(freq/2,ctx.currentTime+.1);g.gain.setValueAtTime(.07,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.25);o.start();o.stop(ctx.currentTime+.25);}catch{}}
+
+
+/* ════ SETTINGS ══════════════════════════════════ */
+function openSettings(){
+  // Показываем секцию админа если это admin
+  const adm=document.getElementById('admin-section');
+  if(adm) adm.style.display=isAdmin()?'block':'none';
+  // Загружаем сохранённые настройки
+  const fs=localStorage.getItem('fontSize')||'14';
+  const th=localStorage.getItem('theme')||'dark';
+  document.getElementById('font-size-sel').value=fs;
+  document.getElementById('theme-sel').value=th;
+  openM('m-settings');
+}
+function setFontSize(v){
+  document.documentElement.style.fontSize=v+'px';
+  localStorage.setItem('fontSize',v);
+}
+function setTheme(v){
+  localStorage.setItem('theme',v);
+  applyTheme(v);
+}
+function applyTheme(v){
+  const r=document.documentElement.style;
+  if(v==='darker'){r.setProperty('--bg0','#080f17');r.setProperty('--bg1','#0e1823');r.setProperty('--bg2','#172030');}
+  else if(v==='blue'){r.setProperty('--bg0','#1a2c42');r.setProperty('--bg1','#1f3550');r.setProperty('--bg2','#253f60');}
+  else{r.setProperty('--bg0','#0e1621');r.setProperty('--bg1','#17212b');r.setProperty('--bg2','#242f3d');}
+}
+function toggleNotif(on){localStorage.setItem('notif',on?'1':'0');}
+function toggleSound(on){localStorage.setItem('sound',on?'1':'0');}
+
+// Применяем настройки при загрузке
+(function(){
+  const fs=localStorage.getItem('fontSize');
+  if(fs) document.documentElement.style.fontSize=fs+'px';
+  const th=localStorage.getItem('theme');
+  if(th) applyTheme(th);
+})();
+
+function isAdmin(){return S.me&&S.me._is_admin;}
+
+/* ════ SUPPORT ════════════════════════════════════ */
+async function openSupport(){
+  try{
+    const room=await http('POST','/api/support');
+    if(!S.rooms.find(r=>r.id===room.id))S.rooms.unshift(room);
+    renderRooms();openRoom(room.id);
+  }catch(e){toast(e.message,'err');}
+}
+
+
+
+/* ════ ADMIN ══════════════════════════════════════ */
+let admUsers=[], admRooms=[];
+
+async function openAdminPanel(){
+  openM('m-admin');
+  await loadAdmUsers();
+}
+
+function swAdminTab(t){
+  ['users','rooms','msg'].forEach(k=>{
+    document.getElementById('adm-'+k).classList.toggle('hidden',k!==t);
+  });
+  document.querySelectorAll('#m-admin .mtab').forEach((el,i)=>
+    el.classList.toggle('on',['users','rooms','msg'][i]===t));
+  if(t==='rooms'&&!admRooms.length) loadAdmRooms();
+}
+
+async function loadAdmUsers(){
+  try{
+    admUsers=await http('GET','/api/admin/users');
+    renderAdmUsers(admUsers);
+  }catch(e){document.getElementById('adm-users-list').innerHTML=`<div style="color:var(--red)">${esc(e.message)}</div>`;}
+}
+
+function filterAdmUsers(q){
+  renderAdmUsers(q?admUsers.filter(u=>(u.username+' '+(u.display_name||'')).toLowerCase().includes(q.toLowerCase())):admUsers);
+}
+
+function renderAdmUsers(users){
+  const el=document.getElementById('adm-users-list');
+  el.innerHTML=users.map(u=>`
+    <div class="adm-user-row">
+      <div class="av av32" style="background:${u.avatar_color}">${ini(u.display_name||u.username)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${esc(u.display_name||u.username)}</div>
+        <div style="font-size:11px;color:var(--t3)">@${esc(u.username)} · ${u.is_online?'🟢 онлайн':'⚫ оффлайн'}</div>
+      </div>
+      <div class="adm-actions">
+        <button class="ib" title="Написать" onclick="admWriteTo(${u.id},'${esc(u.username)}')">✉️</button>
+        <button class="ib danger" title="Удалить" onclick="admDelUser(${u.id},'${esc(u.username)}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+async function loadAdmRooms(){
+  try{
+    admRooms=await http('GET','/api/admin/rooms');
+    document.getElementById('adm-rooms-list').innerHTML=admRooms.map(r=>`
+      <div class="adm-user-row">
+        <div class="av av32" style="background:var(--acc)">${ini(r.name||'?')}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${esc(r.name||'Без названия')}</div>
+          <div style="font-size:11px;color:var(--t3)">${r.room_type} · ${r.members_count} участников</div>
+        </div>
+      </div>`).join('');
+  }catch(e){}
+}
+
+function admWriteTo(uid,uname){
+  closeM('m-admin');
+  swAdminTab('msg');
+  document.getElementById('adm-msg-uid').value=uid;
+  openM('m-admin');
+}
+
+async function admDelUser(uid,uname){
+  if(!confirm(`Удалить пользователя @${uname}? Все данные будут удалены.`)) return;
+  try{
+    await http('DELETE',`/api/admin/users/${uid}`);
+    toast('Пользователь удалён','ok');
+    await loadAdmUsers();
+  }catch(e){toast(e.message,'err');}
+}
+
+async function adminSendMsg(){
+  const uid=parseInt(document.getElementById('adm-msg-uid').value);
+  const text=document.getElementById('adm-msg-text').value.trim();
+  if(!uid||!text){toast('Заполните поля','err');return;}
+  try{
+    await http('POST',`/api/admin/message/${uid}`,null,{content:text});
+    document.getElementById('adm-msg-text').value='';
+    toast('Сообщение отправлено','ok');
+    await loadRooms();
+  }catch(e){toast(e.message,'err');}
+}
+
+/* ════ MANAGE MEMBERS ════════════════════════════ */
+async function openManageMembers(){
+  if(!S.roomId) return;
+  closeM('m-mbrs');
+  openM('m-mngmbrs');
+  await loadMngMembers();
+  // Загружаем всех пользователей для добавления
+  if(!S.allUsers.length) S.allUsers=await http('GET','/api/users',null,{search:''}).catch(()=>[]);
+  renderAddMbrList(S.allUsers);
+}
+
+async function loadMngMembers(){
+  const el=document.getElementById('mng-current');
+  try{
+    const ms=await http('GET',`/api/rooms/${S.roomId}/members`);
+    const room=S.rooms.find(r=>r.id===S.roomId);
+    const amAdmin=room&&room.members.find(m=>m.id===S.me.id)?.is_admin;
+    el.innerHTML=`<div style="font-size:12px;color:var(--t2);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Текущие участники (${ms.length})</div>`+
+    ms.map(m=>`<div class="ur" style="cursor:default">
+      ${avHtml(m,'av32')}
+      <div class="uri"><div class="urn">${esc(dn(m))} ${m.is_admin?'<span style="color:var(--acc);font-size:11px">admin</span>':''}${m.id===S.me.id?' <span style="color:var(--t3);font-size:11px">(вы)</span>':''}</div>
+        <div class="ust ${m.is_online?'on':''}">${m.is_online?'онлайн':'оффлайн'}</div></div>
+      ${amAdmin&&m.id!==S.me.id?`<div style="display:flex;gap:2px">
+        <button class="ib" title="${m.is_admin?'Снять':'Назначить'} админа" onclick="toggleMbrAdmin(${m.id})">${m.is_admin?'👑':'⬆'}</button>
+        <button class="ib danger" title="Исключить" onclick="kickMember(${m.id},'${esc(dn(m))}')">✕</button>
+      </div>`:''}
+    </div>`).join('');
+  }catch(e){el.innerHTML=`<div style="color:var(--t3)">${esc(e.message)}</div>`;}
+}
+
+function srchAddMbr(q){
+  const room=S.rooms.find(r=>r.id===S.roomId);
+  const memberIds=room?room.members.map(m=>m.id):[];
+  const filtered=S.allUsers.filter(u=>!memberIds.includes(u.id)&&dn(u).toLowerCase().includes(q.toLowerCase()));
+  renderAddMbrList(filtered);
+}
+
+function renderAddMbrList(users){
+  const room=S.rooms.find(r=>r.id===S.roomId);
+  const memberIds=room?room.members.map(m=>m.id):[];
+  const available=users.filter(u=>!memberIds.includes(u.id));
+  const el=document.getElementById('add-mbr-list');
+  el.innerHTML=available.map(u=>`<div class="ur" onclick="addMember(${u.id},'${esc(dn(u))}')">
+    ${avHtml(u,'av32')}
+    <div class="uri"><div class="urn">${esc(dn(u))}</div>
+      <div class="ust ${u.is_online?'on':''}">${u.is_online?'онлайн':'оффлайн'}</div></div>
+    <div style="color:var(--acc);font-size:12px">+ Добавить</div>
+  </div>`).join('')||'<div style="color:var(--t3);padding:12px;text-align:center">Нет доступных пользователей</div>';
+}
+
+async function addMember(uid,uname){
+  try{
+    await http('POST',`/api/rooms/${S.roomId}/members/add`,null,{user_id:uid});
+    toast(`${uname} добавлен(а)!`,'ok');
+    await loadRooms();
+    await loadMngMembers();
+    const room=S.rooms.find(r=>r.id===S.roomId);
+    if(room) updChatHead();
+    renderAddMbrList(S.allUsers);
+  }catch(e){toast(e.message,'err');}
+}
+
+async function kickMember(uid,uname){
+  if(!confirm(`Исключить ${uname} из группы?`)) return;
+  try{
+    await http('DELETE',`/api/rooms/${S.roomId}/members/${uid}`);
+    toast(`${uname} исключён(а)`,'ok');
+    await loadRooms();await loadMngMembers();updChatHead();
+  }catch(e){toast(e.message,'err');}
+}
+
+async function toggleMbrAdmin(uid){
+  try{
+    const r=await http('PATCH',`/api/rooms/${S.roomId}/members/${uid}/admin`);
+    toast(r.is_admin?'Назначен администратором':'Снят с роли администратора','ok');
+    await loadMngMembers();
+  }catch(e){toast(e.message,'err');}
+}
+
+/* ════ WS EVENTS для групп ════════════════════════ */
+// Добавляем обработчики для added_to_room / removed_from_room
+
 </script>
 </body>
 </html>
