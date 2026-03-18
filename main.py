@@ -557,8 +557,8 @@ async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Sessio
         download_url=await yadisk_get_download_url(public_key)
         if not download_url: raise HTTPException(503,"Не удалось получить файл с Яндекс Диска")
 
-        # Аудио и видео — стримим через сервер, иначе браузер не сможет воспроизвести
-        if mime.startswith("audio/") or mime.startswith("video/"):
+        # Аудио, видео и изображения — стримим через сервер (нужен для CORS и браузерной совместимости)
+        if mime.startswith("audio/") or mime.startswith("video/") or mime.startswith("image/"):
             try:
                 async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
                     r = await c.get(download_url)
@@ -580,8 +580,25 @@ async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Sessio
                 logger.error(f"Media stream error: {e}")
                 raise HTTPException(502,"Ошибка получения файла")
 
-        # Изображения и файлы — редирект, браузер загрузит сам
-        return RedirectResponse(url=download_url, status_code=302)
+        # Прочие файлы — стримим с disposition=attachment
+        try:
+            async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
+                r = await c.get(download_url)
+                if r.status_code != 200:
+                    raise HTTPException(502,"Ошибка получения файла")
+                fname = msg.content or "file"
+                return Response(
+                    content=r.content,
+                    media_type=mime,
+                    headers={
+                        "Content-Disposition": f'attachment; filename="{fname}"',
+                        "Cache-Control": "public, max-age=3600",
+                    }
+                )
+        except HTTPException: raise
+        except Exception as e:
+            logger.error(f"File download error: {e}")
+            raise HTTPException(502,"Ошибка получения файла")
     else:
         raw=base64.b64decode(msg.media_data)
         fname = msg.content or "file"
