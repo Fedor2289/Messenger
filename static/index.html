@@ -1610,19 +1610,30 @@ function buildContent(msg){
   const t=msg.msg_type;
   if(t==='sticker') return `<div class="sticker">${esc(msg.content)}</div>`;
   
-  // Определяем источник медиа: Яндекс Диск или base64
+  // Медиа-источник: для base64 — сразу, для yadisk — лениво через API
   function mediaSrc(){
-    if(!msg.media_data) return '';
-    if(msg.media_data.startsWith('yadisk:'))
-      return `${API}/api/media/${msg.id}?token=${S.token}`;
+    if(!msg.media_data||msg.media_data.startsWith('yadisk:')) return '';
     return `data:${msg.media_mime};base64,${msg.media_data}`;
   }
-  
-  if(t==='image'){const src=mediaSrc();return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="${esc(msg.content)}">`;}
-  if(t==='gif'){const src=mediaSrc();return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;}
-  if(t==='video'){const src=mediaSrc();return `<video controls style="max-width:280px;border-radius:10px;display:block">${'<source src="'+src+'" type="'+msg.media_mime+'">'}</video>`;}
-  if(t==='voice'){const src=mediaSrc();const wid='vp-'+msg.id;
-    return `<div class="vp"><button class="vp-btn" onclick="vpToggle('${wid}','${src}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="vp-track"><div class="vp-waves">${Array(18).fill(0).map((_,i)=>`<div class="vp-wave" style="height:${4+Math.abs(Math.sin(i*0.7))*14}px"></div>`).join('')}</div><div class="vp-bar" onclick="vpSeek(event,'${wid}')"><div class="vp-prog" id="prog-${wid}"></div></div><div class="vp-times"><span id="cur-${wid}">0:00</span><span id="dur-${wid}">—</span></div></div><audio id="${wid}" src="${src}" onended="vpEnd('${wid}')" ontimeupdate="vpTick('${wid}')" onloadedmetadata="vpMeta('${wid}')"></audio></div>`;}
+  const _mid=msg.id;
+
+  if(t==='image'){
+    const src=mediaSrc();
+    if(src) return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="${esc(msg.content)}">`;
+    return `<img class="msg-img" data-mid="${_mid}" onclick="loadMediaImg(this,'${_mid}')" alt="${esc(msg.content)}" style="cursor:pointer;min-width:100px;min-height:80px;background:var(--bg3);display:block">`;
+  }
+  if(t==='gif'){
+    const src=mediaSrc();
+    if(src) return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;
+    return `<img class="msg-gif" data-mid="${_mid}" onclick="loadMediaImg(this,'${_mid}')" alt="GIF" style="cursor:pointer;min-width:100px;min-height:80px;background:var(--bg3);display:block">`;
+  }
+  if(t==='video'){
+    const src=mediaSrc();
+    if(src) return `<video controls style="max-width:280px;border-radius:10px;display:block"><source src="${src}" type="${msg.media_mime}"></video>`;
+    return `<div class="vp-load" data-mid="${_mid}" data-mime="${msg.media_mime||''}" onclick="loadVideoEl(this)" style="width:220px;height:130px;background:var(--bg3);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/><polygon points="10 8 16 12 10 16" fill="rgba(255,255,255,.7)"/></svg></div>`;
+  }
+  if(t==='voice'){const wid='vp-'+msg.id;
+    return `<div class="vp"><button class="vp-btn" onclick="vpToggle('${wid}','${_mid}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="vp-track"><div class="vp-waves">${Array(18).fill(0).map((_,i)=>`<div class="vp-wave" style="height:${4+Math.abs(Math.sin(i*0.7))*14}px"></div>`).join('')}</div><div class="vp-bar" onclick="vpSeek(event,'${wid}')"><div class="vp-prog" id="prog-${wid}"></div></div><div class="vp-times"><span id="cur-${wid}">0:00</span><span id="dur-${wid}">—</span></div></div><audio id="${wid}" onended="vpEnd('${wid}')" ontimeupdate="vpTick('${wid}')" onloadedmetadata="vpMeta('${wid}')"></audio></div>`;
   if(t==='file'){
     const dlUrl=msg.media_data&&msg.media_data.startsWith('yadisk:')
       ?`${API}/api/media/${msg.id}?token=${S.token}&dl=1`
@@ -1847,13 +1858,44 @@ async function sendVoice(){
 }
 
 /* ════ VOICE PLAYER ═══════════════════════════════ */
-function vpToggle(wid,src){
+// Кэш прямых ссылок (живут ~1 час у Яндекса)
+const _mediaUrlCache={};
+async function _getMediaUrl(msgId){
+  if(_mediaUrlCache[msgId]) return _mediaUrlCache[msgId];
+  const r=await http('GET',`/api/media/${msgId}/url`);
+  _mediaUrlCache[msgId]=r.url;
+  return r.url;
+}
+async function vpToggle(wid,msgId){
   const a=document.getElementById(wid);if(!a)return;
   const btn=a.closest('.vp')?.querySelector('.vp-btn');if(!btn)return;
-  // Если src изменился или аудио ещё не загружено — обновляем
-  if(a.src!==src&&src){a.src=src;a.load();}
+  if(!a.src||a.src===window.location.href){
+    // Ещё не загружено — получаем прямую ссылку с Яндекс.Диска
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="8" stroke-dasharray="50" stroke-dashoffset="25"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur=".8s" repeatCount="indefinite"/></circle></svg>';
+    try{
+      const url=await _getMediaUrl(msgId);
+      a.src=url; a.load();
+      await new Promise((res,rej)=>{a.oncanplay=res;a.onerror=rej;setTimeout(rej,10000);});
+    }catch(e){btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';return;}
+  }
   if(a.paused){a.play().catch(()=>{});btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';}
   else{a.pause();btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';}
+}
+async function loadMediaImg(el,msgId){
+  el.onclick=null;
+  try{const url=await _getMediaUrl(msgId);el.src=url;el.onclick=()=>openLB(url);}
+  catch(e){el.alt='Ошибка загрузки';}
+}
+async function loadVideoEl(el){
+  el.onclick=null;
+  const msgId=el.dataset.mid, mime=el.dataset.mime||'video/mp4';
+  try{
+    const url=await _getMediaUrl(msgId);
+    const v=document.createElement('video');
+    v.controls=true;v.style.cssText='max-width:280px;border-radius:10px;display:block';
+    v.innerHTML=`<source src="${url}" type="${mime}">`;
+    el.replaceWith(v);
+  }catch(e){el.innerHTML='<span style="color:var(--t3)">Ошибка</span>';}
 }
 function vpEnd(wid){document.getElementById(wid).parentElement.querySelector('.vp-btn').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';document.getElementById(`prog-${wid}`).style.width='0%';document.getElementById(`cur-${wid}`).textContent='0:00';}
 function vpTick(wid){const a=document.getElementById(wid);if(!a.duration)return;document.getElementById(`prog-${wid}`).style.width=(a.currentTime/a.duration*100)+'%';document.getElementById(`cur-${wid}`).textContent=fmtDur(Math.floor(a.currentTime));}
