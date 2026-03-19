@@ -38,6 +38,7 @@ self.addEventListener('push', e => {
         renotify: true,
         vibrate: isCall ? [500, 200, 500, 200, 500] : [200, 100, 200],
         silent: false,
+        sound: 'default',
         requireInteraction: isCall,
         ...(isCall ? {
           actions: [
