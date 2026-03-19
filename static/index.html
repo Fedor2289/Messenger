@@ -298,9 +298,6 @@ textarea.fi{resize:none}
   box-shadow:0 2px 12px rgba(82,136,193,.4)}
 .sbtn:hover{transform:scale(1.07)}.sbtn:active{transform:scale(.94)}
 
-.ai-file-preview{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;margin:4px 12px;font-size:12px;color:var(--t2)}
-.ai-file-preview .afp-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ai-file-preview button{background:none;border:none;color:var(--t3);cursor:pointer;padding:2px 4px}
 /* ── ATTACH MENU ── */
 .attach-menu{position:absolute;bottom:72px;left:14px;background:var(--bg2);
   border:1px solid var(--brd);border-radius:var(--r);box-shadow:var(--shadow);
@@ -713,6 +710,7 @@ textarea.fi{resize:none}
   <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></button>
       </div>
+      <div id="ai-file-preview" style="display:none;align-items:center;gap:8px;padding:6px 14px;background:var(--bg2);border-top:1px solid var(--brd);font-size:12px;color:var(--t2)"></div>
       <div class="iarea" id="iarea">
         <div class="attach-menu hidden" id="attach-menu">
           <div class="am-item" onclick="trigFile('image/*,video/*')"><svg width="20" height="20" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -737,9 +735,8 @@ textarea.fi{resize:none}
           <input class="gif-search" id="gif-search" placeholder="⌕ Поиск GIF..." oninput="srchGif(this.value)" style="font-size:16px">
           <div class="gif-grid" id="gif-grid"><div class="gif-loading">Введите запрос для поиска GIF</div></div>
         </div>
-        <div id="ai-file-preview" class="ai-file-preview" style="display:none"></div>
         <input type="file" id="file-input" style="display:none" onchange="handleFile(this)">
-        <button class="ib" id="ai-file-btn" onclick="trigAiFile()" title="Отправить файл ИИ" style="display:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="ib" id="ai-file-btn" onclick="trigAiFile()" title="Прикрепить файл для ИИ" style="display:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <input type="file" id="ai-file-input" style="display:none" accept="image/*,.pdf,.txt,.csv,.json,.md" onchange="handleAiFile(this)">
         <button class="ib" id="regular-attach-btn" onclick="toggleAttach()" title="Прикрепить"><svg width="20" height="20" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M21.44 11.05L12.25 20.24C11.1242 21.3658 9.59723 21.9983 8.005 21.9983C6.41277 21.9983 4.88581 21.3658 3.76 20.24C2.63419 19.1142 2.00171 17.5872 2.00171 15.995C2.00171 14.4028 2.63419 12.8758 3.76 11.75L12.33 3.18C13.0806 2.42955 14.0991 2.00876 15.16 2.00876C16.2209 2.00876 17.2394 2.42955 17.99 3.18C18.7404 3.93063 19.1612 4.94905 19.1612 6.01C19.1612 7.07095 18.7404 8.08937 17.99 8.84L9.41 17.41C9.03472 17.7853 8.52573 17.9957 7.995 17.9957C7.46427 17.9957 6.95528 17.7853 6.58 17.41C6.20472 17.0347 5.99435 16.5257 5.99435 15.995C5.99435 15.4643 6.20472 14.9553 6.58 14.58L15.07 6.1" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1900,15 +1897,19 @@ function handleAiFile(input){
     S._aiPendingFile={data:e.target.result,name:file.name,mime:file.type||'application/octet-stream'};
     _showAiFilePreview(file.name);
   };
-  // Изображения читаем как base64, текст как текст
-  if(file.type.startsWith('image/')){reader.readAsDataURL(file);}
-  else{reader.readAsText(file);}
+  // Изображения и PDF читаем как base64, текст как текст
+  if(file.type.startsWith('image/')||file.type==='application/pdf'){
+    reader.readAsDataURL(file);
+  } else{
+    reader.readAsText(file,'utf-8');
+  }
   input.value='';
 }
 function _showAiFilePreview(name){
   const el=document.getElementById('ai-file-preview');
+  if(!el) return;
   el.style.display='flex';
-  el.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/><polyline points="14 2 14 8 20 8"/></svg><span class="afp-name">${esc(name)}</span><button onclick="_clearAiFilePreview()">✕</button>`;
+  el.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6C5.47 2 4.96 2.21 4.59 2.59C4.21 2.96 4 3.47 4 4V20C4 20.53 4.21 21.04 4.59 21.41C4.96 21.79 5.47 22 6 22H18C18.53 22 19.04 21.79 19.41 21.41C19.79 21.04 20 20.53 20 20V8L14 2Z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t1)">${esc(name)}</span><span style="color:var(--t3);font-size:11px;flex-shrink:0;margin-right:4px">готов к отправке</span><button onclick="_clearAiFilePreview()" style="background:none;border:none;color:var(--t3);cursor:pointer;padding:2px 6px;font-size:15px">✕</button>`;
 }
 function _clearAiFilePreview(){
   S._aiPendingFile=null;
