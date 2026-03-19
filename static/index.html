@@ -1679,7 +1679,7 @@ function buildMsgEl(msg,consec,isGrp){
   const tick=isOut?`<span class="tick ${msg.is_read?'read':''}">✓✓</span>`:'';
   const pinIco=msg.is_pinned?'<span class="pin-ico" style="display:inline-flex;align-items:center;color:var(--acc);margin-left:4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg></span>':'';
   const editIco=msg.edited_at?'<span class="edited" style="font-size:10px;color:rgba(255,255,255,.3);font-style:italic">ред.</span>':'';
-  const isMedia=['image','gif','video','gif_url'].includes(t);
+  const isMedia=['image','gif','video','gif_url'].includes(msg.msg_type);
   const bblClass=`bbl${msg.is_deleted?' deleted':''}${isAI?' ai-bbl':''}${isMedia?' media-bbl':''}`;
   const replyHtml=msg.reply_to&&!msg.is_deleted?`<div class="reply-preview" onclick="scrollToMsg(${msg.reply_to.id})"><div class="reply-preview-sndr">${esc(msg.reply_to.sender?dn(msg.reply_to.sender):'Сообщение')}</div><div class="reply-preview-txt">${esc(msg.reply_to.content||'').substring(0,80)}</div></div>`:'';
 
