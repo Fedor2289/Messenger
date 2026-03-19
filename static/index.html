@@ -238,7 +238,7 @@ textarea.fi{resize:none}
 .rq-btn:hover{transform:scale(1.3);background:rgba(255,255,255,.1)}
 
 /* ── MEDIA IN MESSAGES ── */
-.msg-img,.msg-gif{max-width:280px;max-height:300px;border-radius:10px;
+.msg-img,.msg-gif{max-width:260px;max-height:220px;border-radius:10px;object-fit:cover;
   cursor:pointer;display:block;object-fit:cover}
 .msg-gif{max-height:200px}
 .msg-file{display:flex;align-items:center;gap:10px;padding:4px 0;min-width:180px}
@@ -1695,8 +1695,8 @@ function buildContent(msg){
     return `data:${msg.media_mime};base64,${msg.media_data}`;
   }
 
-  if(t==='image'){const src=mediaSrc();return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="${esc(msg.content)}">`;}  if(t==='gif'){const src=mediaSrc();return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;}
-  if(t==='video'){const src=mediaSrc();return `<video controls style="max-width:280px;border-radius:10px;display:block"><source src="${src}" type="${msg.media_mime}"></video>`;}
+  if(t==='image'){const src=mediaSrc();return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB('${src}')" alt="${esc(msg.content)}" style="cursor:zoom-in">`;}  if(t==='gif'){const src=mediaSrc();return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;}
+  if(t==='video'){const src=mediaSrc();return `<video controls style="max-width:260px;max-height:200px;border-radius:10px;display:block;object-fit:contain" onclick="event.stopPropagation()"><source src="${src}" type="${msg.media_mime}"></video>`;}
   if(t==='voice'){const wid='vp-'+msg.id;const src=mediaSrc();
     return `<div class="vp"><button class="vp-btn" onclick="vpToggle('${wid}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="vp-track"><div class="vp-waves">${Array(18).fill(0).map((_,i)=>`<div class="vp-wave" style="height:${4+Math.abs(Math.sin(i*0.7))*14}px"></div>`).join('')}</div><div class="vp-bar" onclick="vpSeek(event,'${wid}')"><div class="vp-prog" id="prog-${wid}"></div></div><div class="vp-times"><span id="cur-${wid}">0:00</span><span id="dur-${wid}">—</span></div></div><audio id="${wid}" src="${src}" onended="vpEnd('${wid}')" ontimeupdate="vpTick('${wid}')" onloadedmetadata="vpMeta('${wid}')"></audio></div>`;
   }
@@ -1929,8 +1929,8 @@ async function handleFile(input){
   if(file.size>200*1024*1024){toast('Файл слишком большой (макс. 200 МБ)','err');return;}
   const fd=new FormData();fd.append('file',file);
   if(S.replyTo) fd.append('reply_to_id',S.replyTo.id);
-  toast('Загрузка...');
-  try{await httpForm(`/api/rooms/${S.roomId}/upload`,fd);cancelReply();}catch(e){toast(e.message,'err');}
+  const _tid=setTimeout(()=>toast('Загружаем файл...'),500);
+  try{await httpForm(`/api/rooms/${S.roomId}/upload`,fd);clearTimeout(_tid);cancelReply();}catch(e){clearTimeout(_tid);toast(e.message,'err');}
 }
 
 /* ════ VOICE RECORDING ════════════════════════════ */
@@ -1952,7 +1952,7 @@ async function startRec(){
     S.recWI=setInterval(()=>{wc.querySelectorAll('.rec-wave').forEach(w=>{w.style.height=(4+Math.random()*20)+'px';});},100);
   }catch(e){toast('Нет доступа к микрофону','err');}
 }
-function stopRec(){if(S.mediaRec&&S.mediaRec.state!=='inactive')S.mediaRec.stop();S.recStream?.getTracks().forEach(t=>t.stop());clearInterval(S.recTimer);clearInterval(S.recWI);document.getElementById('voicerec').classList.remove('show');}
+function stopRec(){if(S.mediaRec&&S.mediaRec.state!=='inactive')S.mediaRec.stop();S.recStream?.getTracks().forEach(t=>t.stop());clearInterval(S.recTimer);clearInterval(S.recWI);const vr=document.getElementById('voicerec');if(vr)vr.classList.remove('show');}
 function cancelRec(){if(S.mediaRec)S.mediaRec.onstop=null;stopRec();S.recChunks=[];}
 async function sendVoice(){
   if(!S.recChunks.length||!S.roomId) return;
