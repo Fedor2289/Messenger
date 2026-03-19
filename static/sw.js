@@ -2,7 +2,6 @@
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
 
-// Храним данные активного входящего звонка
 let _pendingCallData = null;
 
 self.addEventListener('push', e => {
@@ -14,17 +13,22 @@ self.addEventListener('push', e => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      // Если страница в фокусе — не показываем push для сообщений, но для звонка — всегда
-      const focused = list.some(c => c.focused && c.visibilityState === 'visible');
-      if (focused && !isCall) return;
+      const focused = list.some(c => c.focused);
 
-      // Для звонка сохраняем данные чтобы страница могла их получить
       if (isCall && d.call_data) {
         _pendingCallData = d.call_data;
-        // Отправляем данные звонка всем открытым вкладкам
-        list.forEach(c => c.postMessage({ type: 'incoming_call', call_data: d.call_data }));
+        // Отправляем на все открытые вкладки — там заиграет рингтон
+        list.forEach(c => c.postMessage({
+          type: 'incoming_call',
+          call_data: d.call_data,
+          auto_accept: false
+        }));
       }
 
+      // Для сообщений не показываем если страница в фокусе
+      if (focused && !isCall) return;
+
+      const callType = d.call_data ? d.call_data.call_type : 'voice';
       const opts = {
         body: d.body || '',
         icon: '/static/icon192.png',
@@ -34,8 +38,7 @@ self.addEventListener('push', e => {
         renotify: true,
         vibrate: isCall ? [500, 200, 500, 200, 500] : [200, 100, 200],
         silent: false,
-        requireInteraction: isCall, // звонок остаётся пока не ответят
-        // Кнопки только для звонка
+        requireInteraction: isCall,
         ...(isCall ? {
           actions: [
             { action: 'accept', title: '✅ Взять' },
@@ -55,38 +58,41 @@ self.addEventListener('notificationclick', e => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      // Если нажали "Сбросить"
       if (action === 'decline') {
         list.forEach(c => c.postMessage({ type: 'decline_call', call_data: data.call_data }));
         _pendingCallData = null;
         return;
       }
 
-      // Открываем или фокусируем вкладку
       const openClient = list.find(c => c.url.includes(self.location.origin));
       if (openClient) {
         openClient.focus();
-        // Передаём данные звонка на страницу
         if (data.call_data) {
-          openClient.postMessage({ type: 'incoming_call', call_data: data.call_data, auto_accept: action === 'accept' });
+          openClient.postMessage({
+            type: 'incoming_call',
+            call_data: data.call_data,
+            auto_accept: action === 'accept'
+          });
         } else if (data.room_id) {
           openClient.postMessage({ type: 'open_room', room_id: data.room_id });
         }
         _pendingCallData = null;
         return;
       }
-      // Страница закрыта — открываем и передаём данные через URL
+
+      // Страница закрыта — открываем с параметром
       const url = data.call_data
-        ? `/?pending_call=${encodeURIComponent(JSON.stringify(data.call_data))}`
+        ? `/?pending_call=${encodeURIComponent(JSON.stringify(data.call_data))}&auto_accept=${action === 'accept' ? '1' : '0'}`
         : '/';
+      _pendingCallData = null;
       return clients.openWindow(url);
     })
   );
 });
 
-// Когда страница запрашивает pending call
 self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'get_pending_call') {
+  if (!e.data) return;
+  if (e.data.type === 'get_pending_call') {
     e.source.postMessage({ type: 'pending_call', call_data: _pendingCallData });
     _pendingCallData = null;
   }

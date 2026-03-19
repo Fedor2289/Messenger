@@ -1243,7 +1243,11 @@ async function tryAuto(){
     // Если открыли из уведомления о звонке
     const params=new URLSearchParams(location.search);
     const pc=params.get('pending_call');
-    if(pc){try{_restoreIncomingCall(JSON.parse(decodeURIComponent(pc)),false);history.replaceState({},'','/');}catch{}}
+    if(pc){try{
+      const autoAcc=params.get('auto_accept')==='1';
+      _restoreIncomingCall(JSON.parse(decodeURIComponent(pc)),autoAcc);
+      history.replaceState({},'/','/');
+    }catch{}}
   }
   catch{localStorage.removeItem('token');S.token=null;}
 }
@@ -2153,7 +2157,14 @@ async function startCall(type){
 
 async function onCallOffer(d){
   if(S.callState!=='idle'){wsSend({type:'call_busy',target_id:d.caller_id});return;}
-  S.pendingOffer=d;S.callType=d.call_type||'voice';
+  // Если UI уже показан из push-уведомления — просто обновляем SDP
+  if(S._waitingForSdp&&S.pendingOffer&&S.pendingOffer.caller_id===d.caller_id){
+    S.pendingOffer=d; S._waitingForSdp=false;
+    if(S._autoAcceptPending){S._autoAcceptPending=false;setTimeout(()=>acceptCall(),200);}
+    return;
+  }
+  // Обычный входящий звонок через WS
+  S.pendingOffer=d;S.callType=d.call_type||'voice';S._waitingForSdp=false;
   const caller=findUserById(d.caller_id);
   const ic=document.getElementById('incoming-call');
   document.getElementById('ic-name').textContent=caller?dn(caller):`User ${d.caller_id}`;
@@ -2161,13 +2172,6 @@ async function onCallOffer(d){
   if(caller)setAv(document.getElementById('ic-av'),caller);
   ic.classList.add('show');
   playRingtone();
-  // Браузерное уведомление если окно не в фокусе
-  if(document.hidden&&Notification.permission==='granted'){
-    const cname=caller?dn(caller):'Входящий звонок';
-    const ctype=d.call_type==='video'?'видеозвонок':'голосовой звонок';
-    const n=new Notification(`📞 Входящий ${ctype}`,{body:cname,icon:'/static/icon192.png',tag:'call',requireInteraction:true});
-    n.onclick=()=>{window.focus();n.close();};
-  }
 }
 async function acceptCall(){
   document.getElementById('incoming-call').classList.remove('show');
@@ -2414,18 +2418,20 @@ function base64UrlToUint8(b64){
 function _restoreIncomingCall(callData, autoAccept){
   if(!callData||!callData.caller_id) return;
   if(S.callState!=='idle') return;
-  // Если WS подключён — данные придут сами. Если нет — восстанавливаем из push
   if(S.pendingOffer) return; // уже есть входящий звонок
-  S.pendingOffer=callData;
+  // Показываем UI звонка (SDP придёт через WS)
+  S.pendingOffer=callData;  // без SDP — acceptCall дождётся WS
+  S._waitingForSdp=!callData.sdp;  // флаг что ждём полный offer
   S.callType=callData.call_type||'voice';
   const caller=findUserById(callData.caller_id);
   const ic=document.getElementById('incoming-call');
+  const callTypeText=callData.call_type==='video'?'Входящий видеозвонок':'Входящий звонок';
   document.getElementById('ic-name').textContent=caller?dn(caller):`User ${callData.caller_id}`;
-  document.getElementById('ic-type').textContent=callData.call_type==='video'?'Входящий видеозвонок':'Входящий звонок';
+  document.getElementById('ic-type').textContent=callTypeText;
   if(caller)setAv(document.getElementById('ic-av'),caller);
   ic.classList.add('show');
   playRingtone();
-  if(autoAccept) setTimeout(()=>acceptCall(),300);
+  if(autoAccept) S._autoAcceptPending=true;
 }
 function findUserById(uid){for(const r of S.rooms){const m=r.members.find(m=>m.id===uid);if(m)return m;}return null;}
 
