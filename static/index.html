@@ -1237,7 +1237,14 @@ function updMyInfo(){
 }
 async function tryAuto(){
   if(!S.token) return;
-  try{S.me=await http('GET','/api/me');boot();}
+  try{
+    S.me=await http('GET','/api/me');
+    await boot();
+    // Если открыли из уведомления о звонке
+    const params=new URLSearchParams(location.search);
+    const pc=params.get('pending_call');
+    if(pc){try{_restoreIncomingCall(JSON.parse(decodeURIComponent(pc)),false);history.replaceState({},'','/');}catch{}}
+  }
   catch{localStorage.removeItem('token');S.token=null;}
 }
 tryAuto();
@@ -2323,8 +2330,15 @@ async function initSW(){
     _swReg=await navigator.serviceWorker.register('/sw.js',{scope:'/'});
     // Слушаем postMessage от SW (open_room)
     navigator.serviceWorker.addEventListener('message',e=>{
-      if(e.data&&e.data.type==='open_room') openRoom(e.data.room_id);
+      const m=e.data;
+      if(!m) return;
+      if(m.type==='open_room') openRoom(m.room_id);
+      if(m.type==='incoming_call'&&m.call_data) _restoreIncomingCall(m.call_data, m.auto_accept||false);
+      if(m.type==='decline_call') { stopRingtone(); S.pendingOffer=null; }
+      if(m.type==='pending_call'&&m.call_data) _restoreIncomingCall(m.call_data, false);
     });
+    // Запрашиваем ожидающий звонок (если страница только открылась)
+    if(_swReg&&_swReg.active) _swReg.active.postMessage({type:'get_pending_call'});
     if(_pushEnabled) await subscribePush();
     updatePushBtn();
   }catch(e){console.warn('SW register failed:',e);}
@@ -2396,6 +2410,23 @@ function base64UrlToUint8(b64){
   return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
 }
 
+// Восстанавливаем входящий звонок по данным из push-уведомления
+function _restoreIncomingCall(callData, autoAccept){
+  if(!callData||!callData.caller_id) return;
+  if(S.callState!=='idle') return;
+  // Если WS подключён — данные придут сами. Если нет — восстанавливаем из push
+  if(S.pendingOffer) return; // уже есть входящий звонок
+  S.pendingOffer=callData;
+  S.callType=callData.call_type||'voice';
+  const caller=findUserById(callData.caller_id);
+  const ic=document.getElementById('incoming-call');
+  document.getElementById('ic-name').textContent=caller?dn(caller):`User ${callData.caller_id}`;
+  document.getElementById('ic-type').textContent=callData.call_type==='video'?'Входящий видеозвонок':'Входящий звонок';
+  if(caller)setAv(document.getElementById('ic-av'),caller);
+  ic.classList.add('show');
+  playRingtone();
+  if(autoAccept) setTimeout(()=>acceptCall(),300);
+}
 function findUserById(uid){for(const r of S.rooms){const m=r.members.find(m=>m.id===uid);if(m)return m;}return null;}
 
 /* ════ DOWNLOAD / LIGHTBOX ════════════════════════ */
