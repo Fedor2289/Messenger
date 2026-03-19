@@ -1154,14 +1154,16 @@ async def ws(websocket:WebSocket, token:str):
     except Exception as e: logger.error(f"WS uid={uid}: {e}",exc_info=True)
     finally:
         if uid is not None:
-            await manager.disconnect(uid)
+            await manager.disconnect(uid, websocket)
             try:
-                u2=db.get(models.User,uid)
-                if u2:
-                    u2.is_online=False
-                    u2.last_seen=datetime.utcnow()
-                    db.commit()
-                await _status(db,uid,False)
+                # Обновляем статус только если нет других открытых табов
+                if not manager.is_online(uid):
+                    u2=db.get(models.User,uid)
+                    if u2:
+                        u2.is_online=False
+                        u2.last_seen=datetime.utcnow()
+                        db.commit()
+                    await _status(db,uid,False)
             except Exception as e: logger.error(f"WS cleanup: {e}")
         db.close()
 
