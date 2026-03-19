@@ -1173,29 +1173,22 @@ async def _on_call(db,caller_id,d):
     # Добавляем caller_id в данные и пересылаем
     payload={**d,"caller_id":caller_id}
     await manager.send(target_id,payload)
-    # Push для входящего звонка
+    # Push для входящего звонка (без SDP — он слишком большой для push лимита 4KB)
     if t=="call_offer":
         caller=db.get(models.User,caller_id)
         cname=(caller.display_name or caller.username) if caller else "Кто-то"
         ctype="видео" if d.get("call_type")=="video" else "голосовой"
-        # Передаём полные данные звонка чтобы страница могла восстановить состояние
+        # Минимальные данные без SDP — страница получит SDP через WS при открытии
         call_data = {
-            "title": f"📞 Входящий {ctype} звонок",
-            "body": cname,
-            "tag": "call",
+            "type": "call_offer",
+            "caller_id": caller_id,
+            "call_type": d.get("call_type","voice"),
             "room_id": room_id,
-            "call_data": {
-                "type": "call_offer",
-                "caller_id": caller_id,
-                "call_type": d.get("call_type","voice"),
-                "sdp": d.get("sdp",""),
-                "room_id": room_id,
-            }
         }
         await send_push_to_user(db, target_id,
-            call_data["title"], call_data["body"],
+            f"📞 Входящий {ctype} звонок", cname,
             room_id=room_id, tag="call",
-            extra=call_data)
+            extra={"call_data": call_data})
     # Записываем в историю звонков
     if t=="call_offer" and room_id:
         ct=d.get("call_type","voice")
