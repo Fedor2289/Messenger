@@ -147,7 +147,7 @@ async def yadisk_upload(raw: bytes, filename: str, mime: str) -> str:
     disk_path = f"/{YADISK_FOLDER}/{unique_name}"
     
     try:
-        async with httpx.AsyncClient(timeout=60) as c:
+        async with httpx.AsyncClient(timeout=300) as c:
             headers = {"Authorization": f"OAuth {YADISK_TOKEN}"}
             
             # Создаём папку если нет
@@ -740,7 +740,7 @@ async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Sessio
         # Аудио, видео и изображения — стримим через сервер (нужен для CORS и браузерной совместимости)
         if mime.startswith("audio/") or mime.startswith("video/") or mime.startswith("image/"):
             try:
-                async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
+                async with httpx.AsyncClient(timeout=300, follow_redirects=True) as c:
                     r = await c.get(download_url)
                     if r.status_code != 200:
                         raise HTTPException(502,"Ошибка получения файла")
@@ -1154,16 +1154,14 @@ async def ws(websocket:WebSocket, token:str):
     except Exception as e: logger.error(f"WS uid={uid}: {e}",exc_info=True)
     finally:
         if uid is not None:
-            await manager.disconnect(uid, websocket)
+            await manager.disconnect(uid)
             try:
-                # Обновляем статус только если нет других открытых табов
-                if not manager.is_online(uid):
-                    u2=db.get(models.User,uid)
-                    if u2:
-                        u2.is_online=False
-                        u2.last_seen=datetime.utcnow()
-                        db.commit()
-                    await _status(db,uid,False)
+                u2=db.get(models.User,uid)
+                if u2:
+                    u2.is_online=False
+                    u2.last_seen=datetime.utcnow()
+                    db.commit()
+                await _status(db,uid,False)
             except Exception as e: logger.error(f"WS cleanup: {e}")
         db.close()
 
