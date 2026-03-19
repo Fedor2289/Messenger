@@ -283,9 +283,10 @@ textarea.fi{resize:none}
 /* ── INPUT AREA ── */
 .iarea{padding:10px 12px;padding-bottom:calc(10px + var(--safe-b));
   border-top:1px solid var(--brd);background:var(--bg1);
-  display:flex;align-items:flex-end;gap:8px;flex-shrink:0;position:relative}
-.iwrap{flex:1;background:var(--bg2);border:1.5px solid var(--brd);border-radius:22px;
-  padding:9px 12px;display:flex;align-items:flex-end;gap:6px;transition:border-color var(--tr)}
+  display:flex;align-items:flex-end;gap:6px;flex-shrink:0;position:relative;
+  box-sizing:border-box;width:100%;overflow:visible;min-width:0}
+.iwrap{flex:1;min-width:0;background:var(--bg2);border:1.5px solid var(--brd);border-radius:22px;
+  padding:9px 12px;display:flex;align-items:flex-end;gap:6px;transition:border-color var(--tr);overflow:hidden}
 .iwrap:focus-within{border-color:var(--acc)}
 .ita{flex:1;background:none;border:none;outline:none;resize:none;color:var(--t1);
   font-size:14px;line-height:1.5;max-height:120px;min-height:22px;overflow-y:auto}
@@ -297,6 +298,9 @@ textarea.fi{resize:none}
   box-shadow:0 2px 12px rgba(82,136,193,.4)}
 .sbtn:hover{transform:scale(1.07)}.sbtn:active{transform:scale(.94)}
 
+.ai-file-preview{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;margin:4px 12px;font-size:12px;color:var(--t2)}
+.ai-file-preview .afp-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ai-file-preview button{background:none;border:none;color:var(--t3);cursor:pointer;padding:2px 4px}
 /* ── ATTACH MENU ── */
 .attach-menu{position:absolute;bottom:72px;left:14px;background:var(--bg2);
   border:1px solid var(--brd);border-radius:var(--r);box-shadow:var(--shadow);
@@ -733,8 +737,11 @@ textarea.fi{resize:none}
           <input class="gif-search" id="gif-search" placeholder="⌕ Поиск GIF..." oninput="srchGif(this.value)" style="font-size:16px">
           <div class="gif-grid" id="gif-grid"><div class="gif-loading">Введите запрос для поиска GIF</div></div>
         </div>
+        <div id="ai-file-preview" class="ai-file-preview" style="display:none"></div>
         <input type="file" id="file-input" style="display:none" onchange="handleFile(this)">
-        <button class="ib" onclick="toggleAttach()" title="Прикрепить"><svg width="20" height="20" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <button class="ib" id="ai-file-btn" onclick="trigAiFile()" title="Отправить файл ИИ" style="display:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <input type="file" id="ai-file-input" style="display:none" accept="image/*,.pdf,.txt,.csv,.json,.md" onchange="handleAiFile(this)">
+        <button class="ib" id="regular-attach-btn" onclick="toggleAttach()" title="Прикрепить"><svg width="20" height="20" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M21.44 11.05L12.25 20.24C11.1242 21.3658 9.59723 21.9983 8.005 21.9983C6.41277 21.9983 4.88581 21.3658 3.76 20.24C2.63419 19.1142 2.00171 17.5872 2.00171 15.995C2.00171 14.4028 2.63419 12.8758 3.76 11.75L12.33 3.18C13.0806 2.42955 14.0991 2.00876 15.16 2.00876C16.2209 2.00876 17.2394 2.42955 17.99 3.18C18.7404 3.93063 19.1612 4.94905 19.1612 6.01C19.1612 7.07095 18.7404 8.08937 17.99 8.84L9.41 17.41C9.03472 17.7853 8.52573 17.9957 7.995 17.9957C7.46427 17.9957 6.95528 17.7853 6.58 17.41C6.20472 17.0347 5.99435 16.5257 5.99435 15.995C5.99435 15.4643 6.20472 14.9553 6.58 14.58L15.07 6.1" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></button>
         <button class="ib" onclick="toggleStickers()" title="Стикеры"><svg width="20" height="20" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1549,6 +1556,14 @@ function updChatHead(){
   document.getElementById('del-grp-btn').style.display=(isGrp&&room.created_by===S.me.id)?'flex':'none';
   const editBtn=document.getElementById('edit-grp-btn');
   if(editBtn){const mb=room.members.find(m=>m.id===S.me.id);editBtn.style.display=(isGrp&&mb&&mb.is_admin)?'flex':'none';}
+  // AI chat — show file button, hide regular attach and stickers
+  const isAIroom=(rt==='ai');
+  const aiFbEl=document.getElementById('ai-file-btn');
+  const regAbEl=document.getElementById('regular-attach-btn');
+  if(aiFbEl) aiFbEl.style.display=isAIroom?'flex':'none';
+  if(regAbEl) regAbEl.style.display=isAIroom?'none':'flex';
+  document.querySelectorAll('[onclick="toggleStickers()"]').forEach(b=>b.style.display=isAIroom?'none':'');
+  if(!isAIroom) _clearAiFilePreview();
 }
 
 function updPinnedBanner(room){
@@ -1629,7 +1644,12 @@ function buildMsgEl(msg,consec,isGrp){
   let avHTML='';
   if(!isOut){
     if(consec)avHTML='<div style="width:32px;flex-shrink:0"></div>';
-    else{const avStyle=s.avatar_img&&s.avatar_img.length>10?`background-color:transparent;background-image:url(${s.avatar_img});background-size:cover;background-position:center;background-repeat:no-repeat`:`background-color:${s.avatar_color||'#5288c1'}`;
+    else{
+    // Обновляем данные отправителя из актуального кэша комнаты (на случай смены аватарки)
+    const roomMember=room?room.members.find(m=>m.id===s.id):null;
+    const freshSender=roomMember||s;
+    const avStyle=freshSender.avatar_img&&freshSender.avatar_img.length>10?`background-color:transparent;background-image:url(${freshSender.avatar_img});background-size:cover;background-position:center;background-repeat:no-repeat`:`background-color:${freshSender.avatar_color||'#5288c1'}`;
+    s=freshSender;
       const avTxt=s.avatar_img?'':ini(dn(s));
       avHTML=`<div class="av av32 mav" style="${avStyle};cursor:pointer" onclick="showUserProfile(${s.id})">${avTxt}</div>`;}
   }
@@ -1796,7 +1816,18 @@ async function sendMsg(){
   // AI chat
   if(S.roomType==='ai'){
     ta.value='';ta.style.height='auto';
-    try{await http('POST','/api/ai/message',{message:txt,room_id:S.roomId});}catch(e){toast(e.message,'err');}
+    try{
+      const aiBody={message:txt,room_id:S.roomId};
+      // Если есть прикреплённый файл для ИИ
+      if(S._aiPendingFile){
+        aiBody.file_data=S._aiPendingFile.data;
+        aiBody.file_name=S._aiPendingFile.name;
+        aiBody.file_mime=S._aiPendingFile.mime;
+        S._aiPendingFile=null;
+        _clearAiFilePreview();
+      }
+      await http('POST','/api/ai/message',aiBody);
+    }catch(e){toast(e.message,'err');}
     return;
   }
 
@@ -1859,6 +1890,31 @@ function toggleAttach(){S.attachOpen=!S.attachOpen;document.getElementById('atta
 function toggleStickers(){S.stickersOpen=!S.stickersOpen;document.getElementById('sp-panel').classList.toggle('hidden',!S.stickersOpen);if(S.stickersOpen){document.getElementById('attach-menu').classList.add('hidden');document.getElementById('gif-panel').classList.add('hidden');S.attachOpen=false;S.gifOpen=false;}}
 function openGif(){S.gifOpen=true;document.getElementById('gif-panel').classList.remove('hidden');document.getElementById('attach-menu').classList.add('hidden');S.attachOpen=false;document.getElementById('gif-search').focus();}
 function closeAttach(){S.attachOpen=false;S.stickersOpen=false;S.gifOpen=false;['attach-menu','sp-panel','gif-panel'].forEach(id=>document.getElementById(id).classList.add('hidden'));}
+function trigAiFile(){document.getElementById('ai-file-input').click();}
+function handleAiFile(input){
+  if(!input.files.length) return;
+  const file=input.files[0];
+  if(file.size>10*1024*1024){toast('Файл слишком большой (макс. 10 МБ)','err');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    S._aiPendingFile={data:e.target.result,name:file.name,mime:file.type||'application/octet-stream'};
+    _showAiFilePreview(file.name);
+  };
+  // Изображения читаем как base64, текст как текст
+  if(file.type.startsWith('image/')){reader.readAsDataURL(file);}
+  else{reader.readAsText(file);}
+  input.value='';
+}
+function _showAiFilePreview(name){
+  const el=document.getElementById('ai-file-preview');
+  el.style.display='flex';
+  el.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"/><polyline points="14 2 14 8 20 8"/></svg><span class="afp-name">${esc(name)}</span><button onclick="_clearAiFilePreview()">✕</button>`;
+}
+function _clearAiFilePreview(){
+  S._aiPendingFile=null;
+  const el=document.getElementById('ai-file-preview');
+  if(el){el.style.display='none';el.innerHTML='';}
+}
 
 document.addEventListener('click',e=>{
   const ia=document.getElementById('iarea');
