@@ -93,3 +93,6 @@ class RoomOut(BaseModel):
 
 class AIMessageRequest(BaseModel):
     message: str; room_id: int
+    file_data: Optional[str] = None  # base64 или текст файла
+    file_name: Optional[str] = None
+    file_mime: Optional[str] = None

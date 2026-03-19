@@ -832,8 +832,13 @@ async def ai_message(body:schemas.AIMessageRequest, token:str=Query(...), db:Ses
     if not room or getattr(room,"room_type","chat")!="ai":
         raise HTTPException(400,"Не AI-чат")
 
+    # Формируем текст сообщения пользователя (с описанием файла если есть)
+    user_content_text = body.message
+    if body.file_name:
+        user_content_text = f"[Файл: {body.file_name}]\n{body.message}" if body.message else f"[Файл: {body.file_name}]"
+
     # Сохраняем сообщение пользователя
-    umsg=models.Message(msg_type="text",content=body.message,sender_id=me.id,room_id=body.room_id)
+    umsg=models.Message(msg_type="text",content=user_content_text,sender_id=me.id,room_id=body.room_id)
     db.add(umsg); db.commit()
     um=load_msg(db,umsg.id)
     ids=[m.user_id for m in db.query(models.RoomMember).filter_by(room_id=body.room_id).all()]
@@ -849,7 +854,23 @@ async def ai_message(body:schemas.AIMessageRequest, token:str=Query(...), db:Ses
     messages=[{"role":"user" if m.sender_id==me.id else "assistant",
                "content":m.content} for m in history]
 
-    ai_reply=await _call_ai(messages)
+    # Если прикреплён файл — строим multimodal сообщение
+    file_context = None
+    if body.file_data and body.file_name:
+        mime = body.file_mime or ""
+        if mime.startswith("image/") and body.file_data.startswith("data:"):
+            # Изображение — передаём через vision API
+            file_context = {"type": "image", "data": body.file_data, "mime": mime}
+        else:
+            # Текстовый файл — вставляем содержимое в контекст
+            text_content = body.file_data
+            if len(text_content) > 8000:
+                text_content = text_content[:8000] + "\n...[обрезано]"
+            # Добавляем в последнее сообщение пользователя
+            if messages and messages[-1]["role"] == "user":
+                messages[-1]["content"] += f"\n\nСодержимое файла «{body.file_name}»:\n```\n{text_content}\n```"
+
+    ai_reply=await _call_ai(messages, file_context=file_context)
 
     # Сохраняем ответ ИИ (sender_id=None = AI)
     amsg=models.Message(msg_type="text",content=ai_reply,sender_id=None,room_id=body.room_id)
@@ -858,17 +879,46 @@ async def ai_message(body:schemas.AIMessageRequest, token:str=Query(...), db:Ses
     await manager.broadcast(ids,{"type":"new_message","message":msg_dict(am)})
     return {"ok":True}
 
-async def _call_ai(messages:list) -> str:
-    system={"role":"system","content":"Ты полезный ИИ-ассистент в мессенджере. Отвечай на русском языке, кратко и по делу."}
-    payload_msgs=[system]+messages[-18:]
+async def _call_ai(messages:list, file_context:dict=None) -> str:
+    system={"role":"system","content":"Ты полезный ИИ-ассистент в мессенджере. Отвечай на русском языке, кратко и по делу. Если пользователь прислал файл или изображение — проанализируй его содержимое."}
 
-    # Пробуем Groq
+    # Если есть изображение — добавляем vision контент к последнему сообщению
+    payload_msgs = []
+    for m in messages[-18:]:
+        payload_msgs.append(m)
+
+    if file_context and file_context.get("type") == "image":
+        # Заменяем последнее сообщение пользователя на multimodal
+        img_data = file_context["data"]
+        img_mime = file_context["mime"]
+        # Извлекаем base64 из data URL
+        if "," in img_data:
+            img_b64 = img_data.split(",", 1)[1]
+        else:
+            img_b64 = img_data
+        # Находим последнее сообщение пользователя и делаем его multimodal
+        for i in range(len(payload_msgs)-1, -1, -1):
+            if payload_msgs[i]["role"] == "user":
+                text_part = payload_msgs[i]["content"]
+                payload_msgs[i] = {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": text_part or "Что на этом изображении?"},
+                        {"type": "image_url", "image_url": {"url": f"data:{img_mime};base64,{img_b64}"}}
+                    ]
+                }
+                break
+
+    payload_with_system = [system] + payload_msgs
+
+    # Пробуем Groq (поддерживает vision через llama-3.2-vision)
     if GROQ_API_KEY and AI_BACKEND in ("groq","auto"):
         try:
+            model = "llama-3.2-11b-vision-preview" if file_context and file_context.get("type")=="image" else "llama-3.1-8b-instant"
             async with httpx.AsyncClient(timeout=30) as c:
                 r=await c.post("https://api.groq.com/openai/v1/chat/completions",
                     headers={"Authorization":f"Bearer {GROQ_API_KEY}","Content-Type":"application/json"},
-                    json={"model":"llama-3.1-8b-instant","messages":payload_msgs,"max_tokens":1024})
+                    json={"model":model,"messages":payload_with_system,"max_tokens":1024})
                 if r.status_code==200:
                     return r.json()["choices"][0]["message"]["content"]
         except Exception as e: logger.error(f"Groq error: {e}")
@@ -876,10 +926,12 @@ async def _call_ai(messages:list) -> str:
     # Пробуем Cerebras
     if CEREBRAS_KEY and AI_BACKEND in ("cerebras","auto"):
         try:
+            # Cerebras не поддерживает vision — используем только текст
+            text_only = [{"role":m["role"],"content":m["content"] if isinstance(m["content"],str) else next((c["text"] for c in m["content"] if c["type"]=="text"),"[изображение]")} for m in payload_with_system]
             async with httpx.AsyncClient(timeout=30) as c:
                 r=await c.post("https://api.cerebras.ai/v1/chat/completions",
                     headers={"Authorization":f"Bearer {CEREBRAS_KEY}","Content-Type":"application/json"},
-                    json={"model":"llama-3.3-70b","messages":payload_msgs,"max_tokens":1024})
+                    json={"model":"llama-3.3-70b","messages":text_only,"max_tokens":1024})
                 if r.status_code==200:
                     return r.json()["choices"][0]["message"]["content"]
         except Exception as e: logger.error(f"Cerebras error: {e}")
