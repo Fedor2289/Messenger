@@ -1642,14 +1642,13 @@ function buildMsgEl(msg,consec,isGrp){
   if(!isOut){
     if(consec)avHTML='<div style="width:32px;flex-shrink:0"></div>';
     else{
-      // Берём свежие данные из кэша комнаты (аватарка могла обновиться)
-      const _curRoom=S.rooms.find(r=>r.id===msg.room_id);
-      const _member=_curRoom?_curRoom.members.find(m=>m.id===s.id):null;
-      const _sender=_member||s;
-      const avStyle=_sender.avatar_img&&_sender.avatar_img.length>10?`background-color:transparent;background-image:url(${_sender.avatar_img});background-size:cover;background-position:center;background-repeat:no-repeat`:`background-color:${_sender.avatar_color||'#5288c1'}`;
-      const avTxt=_sender.avatar_img?'':ini(dn(_sender));
-      avHTML=`<div class="av av32 mav" style="${avStyle};cursor:pointer" onclick="showUserProfile(${_sender.id})">${avTxt}</div>`;
-    }
+    // Обновляем данные отправителя из актуального кэша комнаты (на случай смены аватарки)
+    const _rm=S.rooms.find(r=>r.id===msg.room_id);
+    const _mb=_rm?_rm.members.find(m=>m.id===s.id):null;
+    const _sd=_mb||s;
+    const avStyle=_sd.avatar_img&&_sd.avatar_img.length>10?`background-color:transparent;background-image:url(${_sd.avatar_img});background-size:cover;background-position:center;background-repeat:no-repeat`:`background-color:${_sd.avatar_color||'#5288c1'}`;
+    const avTxt=_sd.avatar_img?'':ini(dn(_sd));
+    avHTML=`<div class="av av32 mav" style="${avStyle};cursor:pointer" onclick="showUserProfile(${_sd.id})">${avTxt}</div>`;}
   }
 
   const sndrHtml=isGrp&&!isOut&&!consec?`<div class="sndr" style="color:${s.avatar_color||'#5288c1'}">${esc(dn(s))}</div>`:'';
