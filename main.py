@@ -374,7 +374,7 @@ async def push_unsubscribe(token:str=Query(...), endpoint:str=Query(...), db:Ses
     db.commit()
     return {"ok":True}
 
-async def send_push_to_user(db, user_id:int, title:str, body:str, room_id:int=None, tag:str="msg"):
+async def send_push_to_user(db, user_id:int, title:str, body:str, room_id:int=None, tag:str="msg", extra:dict=None):
     if not VAPID_PRIVATE or not VAPID_PUBLIC:
         logger.warning("Push: VAPID keys not set, skipping")
         return
@@ -388,7 +388,10 @@ async def send_push_to_user(db, user_id:int, title:str, body:str, room_id:int=No
         return
     if not rows:
         return
-    payload=json.dumps({"title":title,"body":body,"room_id":room_id,"tag":tag})
+    payload_data = {"title":title,"body":body,"room_id":room_id,"tag":tag}
+    if extra:
+        payload_data.update(extra)
+    payload=json.dumps(payload_data)
     # Нормализуем приватный ключ — vapidkeys.com даёт raw base64url, pywebpush хочет его же
     priv_key = VAPID_PRIVATE.strip()
     # Если это PEM — оставляем как есть, если raw base64url — тоже оставляем
@@ -1170,12 +1173,29 @@ async def _on_call(db,caller_id,d):
     # Добавляем caller_id в данные и пересылаем
     payload={**d,"caller_id":caller_id}
     await manager.send(target_id,payload)
-    # Push для входящего звонка если адресат офлайн
+    # Push для входящего звонка
     if t=="call_offer":
         caller=db.get(models.User,caller_id)
         cname=(caller.display_name or caller.username) if caller else "Кто-то"
         ctype="видео" if d.get("call_type")=="video" else "голосовой"
-        await send_push_to_user(db,target_id,f"📞 Входящий {ctype} звонок",cname,tag="call")
+        # Передаём полные данные звонка чтобы страница могла восстановить состояние
+        call_data = {
+            "title": f"📞 Входящий {ctype} звонок",
+            "body": cname,
+            "tag": "call",
+            "room_id": room_id,
+            "call_data": {
+                "type": "call_offer",
+                "caller_id": caller_id,
+                "call_type": d.get("call_type","voice"),
+                "sdp": d.get("sdp",""),
+                "room_id": room_id,
+            }
+        }
+        await send_push_to_user(db, target_id,
+            call_data["title"], call_data["body"],
+            room_id=room_id, tag="call",
+            extra=call_data)
     # Записываем в историю звонков
     if t=="call_offer" and room_id:
         ct=d.get("call_type","voice")
