@@ -1288,7 +1288,11 @@ function connectWS(){
     clearInterval(S.pingInt);
     document.getElementById('conn-bad').classList.add('show');
     if(e.code===4001){S.wsAuthFail=true;logout();return;}
-    if(e.code===4002) return;
+    if(e.code===4002){
+      // Вытеснено другим табом — переподключаемся через небольшую паузу
+      setTimeout(()=>{if(S.token)connectWS();},2000);
+      return;
+    }
     if(S.token&&!S.wsAuthFail){setTimeout(()=>{if(S.token)connectWS();},S.wsDelay);S.wsDelay=Math.min(S.wsDelay*2,30000);}
   };
   S.ws.onerror=()=>{};
@@ -1802,20 +1806,18 @@ async function sendMsg(){
   const txt=ta.value.trim();
   if(!txt||!S.roomId) return;
   if(txt.length>4096){toast('Сообщение слишком длинное','err');return;}
-  if(!S.ws||S.ws.readyState!==WebSocket.OPEN){toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Нет соединения');connectWS();return;}
 
-  // Edit mode
+  // Edit mode (через HTTP, WS не нужен)
   if(S.editMsgId){
     try{await http('PATCH',`/api/messages/${S.editMsgId}`,null,{content:txt});}catch(e){toast(e.message,'err');}
     cancelEdit();return;
   }
 
-  // AI chat
+  // AI chat (через HTTP, WS не нужен)
   if(S.roomType==='ai'){
     ta.value='';ta.style.height='auto';
     try{
       const aiBody={message:txt,room_id:S.roomId};
-      // Если есть прикреплённый файл для ИИ
       if(S._aiPendingFile){
         aiBody.file_data=S._aiPendingFile.data;
         aiBody.file_name=S._aiPendingFile.name;
@@ -1825,6 +1827,20 @@ async function sendMsg(){
       }
       await http('POST','/api/ai/message',aiBody);
     }catch(e){toast(e.message,'err');}
+    return;
+  }
+
+  // Обычные сообщения — через WebSocket
+  if(!S.ws||S.ws.readyState!==WebSocket.OPEN){
+    toast('Нет соединения, переподключаемся...');
+    connectWS();
+    // Пробуем отправить через секунду
+    setTimeout(()=>{
+      if(S.ws&&S.ws.readyState===WebSocket.OPEN){
+        wsSend({type:'message',room_id:S.roomId,content:txt,reply_to_id:S.replyTo?.id||null});
+        ta.value='';ta.style.height='auto';updCharCnt(ta);sendTy(false);cancelReply();
+      }
+    },1500);
     return;
   }
 
