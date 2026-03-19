@@ -435,10 +435,10 @@ textarea.fi{resize:none}
 
 /* ── LIGHTBOX ── */
 .lb{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;
-  display:none;align-items:center;justify-content:center}
+  display:none;align-items:center;justify-content:center;flex-direction:column}
 .lb.show{display:flex}
-.lb img{max-width:90vw;max-height:90vh;border-radius:8px}
-.lb-close{position:fixed;top:16px;right:20px;font-size:30px;color:#fff;
+.lb img{max-width:92vw;max-height:88vh;border-radius:8px;object-fit:contain}
+.lb-close{position:fixed;top:16px;right:20px;font-size:30px;color:#fff;background:rgba(0,0,0,.4);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
   cursor:pointer;background:none;border:none;opacity:.7}
 .lb-close:hover{opacity:1}
 
@@ -494,8 +494,9 @@ textarea.fi{resize:none}
 .admin-tag{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;
   font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px}
 
-.spinner{width:22px;height:22px;border:2.5px solid rgba(255,255,255,.15);
-  border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;margin:auto}
+.spinner{width:24px;height:24px;border:2.5px solid rgba(255,255,255,.15);
+  border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;margin:auto;
+  box-sizing:border-box;flex-shrink:0;display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── MOBILE ── */
@@ -1065,12 +1066,30 @@ textarea.fi{resize:none}
 </div>
 
 <!-- LIGHTBOX -->
-<div class="lb" id="lb" onclick="closeLB()">
-  <button class="lb-close" style="font-size:28px;line-height:1"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8bGluZSB4MT0iMTgiIHkxPSI2IiB4Mj0iNiIgeTI9IjE4IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxsaW5lIHgxPSI2IiB5MT0iNiIgeDI9IjE4IiB5Mj0iMTgiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPg==" width="28" height="28" style="display:inline-block;vertical-align:middle" alt=""></button>
-  <img id="lb-img" src="" alt="">
+<div class="lb" id="lb" onclick="closeLBClick(event)">
+  <button class="lb-close" onclick="closeLB()" style="font-size:28px;line-height:1"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/></svg></button>
+  <img id="lb-img" src="" alt="" style="display:none">
+  <video id="lb-video" controls style="display:none;max-width:92vw;max-height:88vh;border-radius:8px;outline:none"></video>
 </div>
 
 <div id="toasts"></div>
+
+<!-- MODAL: USER PROFILE VIEW -->
+<div class="ov" id="m-user-profile" onclick="closeOv(event,'m-user-profile')">
+  <div class="modal" style="max-width:340px">
+    <div class="mhd"><span class="mt" id="upr-name">Профиль</span><button class="ib" onclick="closeM('m-user-profile')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div style="padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div class="av av72" id="upr-av" style="background:#5288c1"></div>
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:700" id="upr-display"></div>
+        <div style="font-size:13px;color:var(--t2);margin-top:2px" id="upr-username"></div>
+        <div style="font-size:13px;color:var(--t2);margin-top:2px" id="upr-status"></div>
+      </div>
+      <div id="upr-bio" style="font-size:13px;color:var(--t2);text-align:center;padding:0 8px;line-height:1.5;display:none"></div>
+      <button class="btn btn-p btn-full" id="upr-msg-btn" onclick="openDirectFromProfile()" style="display:none">Написать сообщение</button>
+    </div>
+  </div>
+</div>
 <!-- CONTEXT MENU -->
 <div class="ctxmenu hidden" id="ctxmenu"></div>
 
@@ -2178,13 +2197,33 @@ async function saveProfile(){
     renderRooms();closeM('m-prof');toast('Профиль сохранён','ok');}catch(e){toast(e.message,'err');}
   finally{_savingProfile=false;if(btn)btn.disabled=false;}
 }
+let _uprTargetId=null;
 function showUserProfile(uid){
-  if(!uid||uid===0) return; // AI
-  const room=S.rooms.find(r=>r.id===S.roomId);
-  if(!room) return;
-  const mbr=room.members.find(m=>m.id===uid);
+  if(!uid||uid===0) return;
+  // Ищем пользователя во всех комнатах
+  let mbr=null;
+  for(const r of S.rooms){mbr=r.members.find(m=>m.id===uid);if(mbr)break;}
   if(!mbr) return;
-  toast(`${dn(mbr)} · ${mbr.is_online?'онлайн':(mbr.last_seen?'был '+fmtLastSeen(mbr.last_seen):'оффлайн')}`);
+  _uprTargetId=uid;
+  // Заполняем модальное окно
+  document.getElementById('upr-name').textContent=dn(mbr);
+  document.getElementById('upr-display').textContent=mbr.display_name||mbr.username;
+  document.getElementById('upr-username').textContent='@'+mbr.username;
+  const statusEl=document.getElementById('upr-status');
+  statusEl.textContent=mbr.is_online?'🟢 онлайн':(mbr.last_seen?'был '+fmtLastSeen(mbr.last_seen):'оффлайн');
+  statusEl.style.color=mbr.is_online?'var(--ok)':'var(--t3)';
+  const bioEl=document.getElementById('upr-bio');
+  if(mbr.bio){bioEl.textContent=mbr.bio;bioEl.style.display='';}else{bioEl.style.display='none';}
+  // Аватарка
+  setAv(document.getElementById('upr-av'),mbr);
+  // Кнопка "Написать" только для чужих профилей
+  const msgBtn=document.getElementById('upr-msg-btn');
+  msgBtn.style.display=(uid!==S.me.id)?'':'none';
+  openM('m-user-profile');
+}
+function openDirectFromProfile(){
+  closeM('m-user-profile');
+  if(_uprTargetId) openDirect(_uprTargetId);
 }
 
 /* ════ WEBRTC CALLS ═══════════════════════════════ */
@@ -2495,8 +2534,25 @@ function findUserById(uid){for(const r of S.rooms){const m=r.members.find(m=>m.i
 
 /* ════ DOWNLOAD / LIGHTBOX ════════════════════════ */
 function dlFile(src,name){if(src.startsWith('data:')){const a=document.createElement('a');a.href=src;a.download=name;a.click();}else{window.open(src,'_blank');}}
-function openLB(src){document.getElementById('lb-img').src=src;document.getElementById('lb').classList.add('show');}
-function closeLB(){document.getElementById('lb').classList.remove('show');}
+function openLB(src,mime){
+  const lb=document.getElementById('lb');
+  const img=document.getElementById('lb-img');
+  const vid=document.getElementById('lb-video');
+  if(mime&&mime.startsWith('video/')||(!mime&&(src.includes('.mp4')||src.includes('.webm')||src.includes('.ogg')))){
+    img.style.display='none';img.src='';
+    vid.style.display='';vid.src=src;vid.load();
+  } else {
+    vid.style.display='none';vid.pause();vid.src='';
+    img.style.display='';img.src=src;
+  }
+  lb.classList.add('show');
+}
+function closeLBClick(e){if(e.target===document.getElementById('lb'))closeLB();}
+function closeLB(){
+  const lb=document.getElementById('lb');lb.classList.remove('show');
+  const vid=document.getElementById('lb-video');if(vid){vid.pause();vid.src='';}
+  document.getElementById('lb-img').src='';
+}
 
 /* ════ SOUND ══════════════════════════════════════ */
 function playBeep(freq=880){
