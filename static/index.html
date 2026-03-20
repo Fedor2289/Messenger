@@ -450,6 +450,8 @@ textarea.fi{resize:none}
   display:flex;align-items:center;justify-content:center;padding:0}
 .lb-close:hover{opacity:1;background:rgba(0,0,0,.75)}
 
+/* ── UPLOAD PULSE ── */
+@keyframes uploadPulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* ── TOAST ── */
 #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
   z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;min-width:200px}
@@ -1103,11 +1105,11 @@ textarea.fi{resize:none}
 <div id="toasts"></div>
 <div id="upload-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:600;padding:0">
   <div style="background:var(--bg2);border-top:1px solid var(--brd);padding:8px 16px;display:flex;align-items:center;gap:10px">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <svg id="upload-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     <div style="flex:1">
       <div style="font-size:12px;color:var(--t2);margin-bottom:4px" id="upload-label">Загрузка...</div>
       <div style="background:var(--bg3);border-radius:4px;height:4px;overflow:hidden">
-        <div id="upload-progress" style="height:4px;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px;width:0%;transition:width .2s ease"></div>
+        <div id="upload-progress" style="height:4px;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px;width:0%;transition:width .3s ease"></div>
       </div>
     </div>
     <span id="upload-pct" style="font-size:12px;color:var(--acc);font-weight:600;min-width:36px;text-align:right">0%</span>
@@ -1221,11 +1223,28 @@ function showUploadBar(label){
   document.getElementById('upload-pct').textContent='0%';
 }
 function setUploadProgress(pct){
-  document.getElementById('upload-progress').style.width=pct+'%';
-  document.getElementById('upload-pct').textContent=pct+'%';
+  const bar=document.getElementById('upload-progress');
+  const pctEl=document.getElementById('upload-pct');
+  if(pct>=100){
+    // Переключаем на анимированную полоску "сохранение в облаке"
+    bar.style.width='100%';
+    bar.style.transition='none';
+    bar.style.animation='uploadPulse 1s ease-in-out infinite';
+    pctEl.textContent='☁️';
+    document.getElementById('upload-label').textContent='Сохранение в облаке...';
+  } else {
+    bar.style.animation='';
+    bar.style.transition='width .3s ease';
+    bar.style.width=pct+'%';
+    pctEl.textContent=pct+'%';
+  }
 }
 function hideUploadBar(){
   document.getElementById('upload-bar').style.display='none';
+  const bar=document.getElementById('upload-progress');
+  if(bar){bar.style.animation='';bar.style.width='0%';}
+  const pct=document.getElementById('upload-pct');
+  if(pct)pct.textContent='0%';
 }
 function esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s||''));return d.innerHTML;}
 function fmtTime(iso){const s=iso&&!iso.endsWith('Z')&&!iso.includes('+')?(iso+'Z'):iso;return new Date(s).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'});}
