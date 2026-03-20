@@ -24,6 +24,17 @@ from websocket_manager import manager
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
+import time as _time
+_yadisk_url_cache: dict = {}
+_CACHE_TTL = 1800
+
+def _cache_get(key):
+    e = _yadisk_url_cache.get(key)
+    return e[0] if e and _time.time() < e[1] else None
+
+def _cache_set(key, url):
+    _yadisk_url_cache[key] = (url, _time.time() + _CACHE_TTL)
+
 # Кеш прямых ссылок с Яндекс Диска (живут ~30 минут)
 import time as _time
 _yadisk_url_cache: dict = {}  # public_key -> (url, expires_at)
@@ -224,12 +235,9 @@ async def yadisk_upload(raw: bytes, filename: str, mime: str) -> str:
         return ""
 
 async def yadisk_get_download_url(public_key: str) -> str:
-    """Получает прямую ссылку для скачивания с Яндекс Диска (с кешем)"""
-    if not YADISK_TOKEN:
-        return ""
+    if not YADISK_TOKEN: return ""
     cached = _cache_get(public_key)
-    if cached:
-        return cached
+    if cached: return cached
     try:
         async with httpx.AsyncClient(timeout=10) as c:
             r = await c.get(
@@ -718,14 +726,16 @@ async def upload(rid:int, token:str=Query(...), file:UploadFile=File(...),
     db.add(msg); db.commit()
     m=load_msg(db,msg.id)
     ids=[mb.user_id for mb in db.query(models.RoomMember).filter_by(room_id=rid).all()]
-    await manager.broadcast(ids,{"type":"new_message","message":msg_dict(m)})
-    # Push всем кроме отправителя (сервис-воркер сам решит показывать или нет)
-    _sndr = m.get("sender") or {}; sender_name = _sndr.get("display_name") or _sndr.get("username") or "Кто-то"
-    pbody = m["content"][:80] if m.get("msg_type")=="text" else "📎 Медиафайл"
+    md=msg_dict(m)
+    await manager.broadcast(ids,{"type":"new_message","message":md})
+    # Push всем кроме отправителя
+    _sndr = md.get("sender") or {}
+    sender_name = _sndr.get("display_name") or _sndr.get("username") or "Кто-то"
+    pbody = md.get("content","")[:80] if md.get("msg_type")=="text" else "📎 Медиафайл"
     for uid in ids:
         if uid != me.id:
             await send_push_to_user(db, uid, sender_name, pbody, room_id=rid)
-    return msg_dict(m)
+    return md
 
 @app.get("/api/media/{msg_id}/url")
 async def get_media_url(msg_id:int, token:str=Query(...), db:Session=Depends(get_db)):
