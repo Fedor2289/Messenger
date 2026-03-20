@@ -1240,11 +1240,43 @@ function setUploadProgress(pct){
   }
 }
 function hideUploadBar(){
+  clearInterval(_cloudProgressInt);
   document.getElementById('upload-bar').style.display='none';
   const bar=document.getElementById('upload-progress');
-  if(bar){bar.style.animation='';bar.style.width='0%';}
+  if(bar){bar.style.animation='';bar.style.transition='none';bar.style.width='0%';}
   const pct=document.getElementById('upload-pct');
   if(pct)pct.textContent='0%';
+}
+let _cloudProgressInt=null;
+let _cloudPct=0;
+function startCloudProgress(){
+  // Анимируем 0→95% за ~5 сек пока сервер заливает на Яндекс.Диск
+  _cloudPct=0;
+  clearInterval(_cloudProgressInt);
+  const bar=document.getElementById('upload-progress');
+  const pctEl=document.getElementById('upload-pct');
+  if(bar){bar.style.animation='';bar.style.transition='width .4s ease';bar.style.width='0%';}
+  document.getElementById('upload-label').textContent='Сохранение в облаке...';
+  _cloudProgressInt=setInterval(()=>{
+    _cloudPct=Math.min(95,_cloudPct+Math.random()*4+1);
+    if(bar) bar.style.width=_cloudPct+'%';
+    if(pctEl) pctEl.textContent=Math.round(_cloudPct)+'%';
+  },200);
+}
+function finishCloudProgress(msg){
+  clearInterval(_cloudProgressInt);
+  const bar=document.getElementById('upload-progress');
+  const pctEl=document.getElementById('upload-pct');
+  if(bar){bar.style.transition='width .15s ease';bar.style.width='100%';}
+  if(pctEl)pctEl.textContent='100%';
+  // Сразу показываем сообщение в чате
+  if(msg&&S.roomId===msg.room_id){
+    // Показываем только если ещё не добавлено через WS
+    if(!document.querySelector(`.mw[data-id="${msg.id}"]`)){
+      appendMsg(msg);scrollBot();
+    }
+  }
+  setTimeout(()=>hideUploadBar(),400);
 }
 function esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s||''));return d.innerHTML;}
 function fmtTime(iso){const s=iso&&!iso.endsWith('Z')&&!iso.includes('+')?(iso+'Z'):iso;return new Date(s).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'});}
@@ -2062,11 +2094,11 @@ async function handleFile(input){
   const _fn=file.name;
   showUploadBar(_fn.length>30?_fn.slice(0,27)+'...':_fn);
   try{
-    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
-      setUploadProgress(pct);
-      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
+    const res=await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      if(pct<100) setUploadProgress(pct);
+      else startCloudProgress();
     });
-    hideUploadBar();cancelReply();
+    finishCloudProgress(res);cancelReply();
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
@@ -2099,11 +2131,11 @@ async function sendVoice(){
   const fd=new FormData();fd.append('file',new File([blob],`voice.${ext}`,{type:mime}));
   showUploadBar('Отправка голосового...');
   try{
-    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
-      setUploadProgress(pct);
-      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
+    const res=await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      if(pct<100) setUploadProgress(pct);
+      else startCloudProgress();
     });
-    hideUploadBar();
+    finishCloudProgress(res);
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
@@ -2176,11 +2208,11 @@ async function sendVidNote(){
   const fd=new FormData();fd.append('file',new File([blob],`vidnote.${ext}`,{type:mime}));
   showUploadBar('Отправка видеосообщения...');
   try{
-    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
-      setUploadProgress(pct);
-      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
+    const res=await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      if(pct<100) setUploadProgress(pct);
+      else startCloudProgress();
     });
-    hideUploadBar();
+    finishCloudProgress(res);
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
