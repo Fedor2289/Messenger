@@ -24,6 +24,20 @@ from websocket_manager import manager
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
+# Кеш прямых ссылок с Яндекс Диска (живут ~30 минут)
+import time as _time
+_yadisk_url_cache: dict = {}  # public_key -> (url, expires_at)
+_CACHE_TTL = 1800  # 30 минут
+
+def _cache_get(key: str):
+    entry = _yadisk_url_cache.get(key)
+    if entry and _time.time() < entry[1]:
+        return entry[0]
+    return None
+
+def _cache_set(key: str, url: str):
+    _yadisk_url_cache[key] = (url, _time.time() + _CACHE_TTL)
+
 # ── Env ──────────────────────────────────────────────────────
 GROQ_API_KEY    = os.getenv("GROQ_API_KEY", "")
 CEREBRAS_KEY    = os.getenv("CEREBRAS_API_KEY", "")
@@ -147,15 +161,17 @@ async def yadisk_upload(raw: bytes, filename: str, mime: str) -> str:
     disk_path = f"/{YADISK_FOLDER}/{unique_name}"
     
     try:
-        async with httpx.AsyncClient(timeout=60) as c:
+        async with httpx.AsyncClient(timeout=300) as c:
             headers = {"Authorization": f"OAuth {YADISK_TOKEN}"}
             
-            # Создаём папку если нет
-            await c.put(
-                "https://cloud-api.yandex.net/v1/disk/resources",
-                headers=headers,
-                params={"path": f"/{YADISK_FOLDER}"}
-            )  # игнорируем ошибку если папка уже есть
+            # Создаём папку если нет (игнорируем 409 если уже есть)
+            if not getattr(yadisk_upload, '_folder_created', False):
+                await c.put(
+                    "https://cloud-api.yandex.net/v1/disk/resources",
+                    headers=headers,
+                    params={"path": f"/{YADISK_FOLDER}"}
+                )
+                yadisk_upload._folder_created = True
             
             # 1. Получаем URL для загрузки
             r = await c.get(
@@ -208,9 +224,12 @@ async def yadisk_upload(raw: bytes, filename: str, mime: str) -> str:
         return ""
 
 async def yadisk_get_download_url(public_key: str) -> str:
-    """Получает прямую ссылку для скачивания с Яндекс Диска"""
+    """Получает прямую ссылку для скачивания с Яндекс Диска (с кешем)"""
     if not YADISK_TOKEN:
         return ""
+    cached = _cache_get(public_key)
+    if cached:
+        return cached
     try:
         async with httpx.AsyncClient(timeout=10) as c:
             r = await c.get(
@@ -219,7 +238,9 @@ async def yadisk_get_download_url(public_key: str) -> str:
                 params={"public_key": public_key}
             )
             if r.status_code == 200:
-                return r.json().get("href", "")
+                url = r.json().get("href", "")
+                if url: _cache_set(public_key, url)
+                return url
     except Exception as e:
         logger.error(f"YaDisk get download URL: {e}")
     return ""
@@ -298,7 +319,6 @@ def room_dict(room, viewer_id, db):
         "is_online":manager.is_online(m.user.id),
         "is_admin":m.is_admin,
         "last_seen":m.user.last_seen.isoformat() if getattr(m.user,"last_seen",None) else None,
-        "bio":getattr(m.user,"bio",None),
     } for m in room.members]
     last=(db.query(models.Message)
           .options(joinedload(models.Message.sender),
@@ -738,48 +758,17 @@ async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Sessio
         download_url=await yadisk_get_download_url(public_key)
         if not download_url: raise HTTPException(503,"Не удалось получить файл с Яндекс Диска")
 
-        # Аудио, видео и изображения — стримим через сервер (нужен для CORS и браузерной совместимости)
-        if mime.startswith("audio/") or mime.startswith("video/") or mime.startswith("image/"):
-            try:
-                async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
-                    r = await c.get(download_url)
-                    if r.status_code != 200:
-                        raise HTTPException(502,"Ошибка получения файла")
-                    fname = msg.content or "file"
-                    return Response(
-                        content=r.content,
-                        media_type=mime,
-                        headers={
-                            "Content-Disposition": f'inline; filename="{fname}"',
-                            "Accept-Ranges": "bytes",
-                            "Cache-Control": "public, max-age=3600",
-                            "Access-Control-Allow-Origin": "*",
-                        }
-                    )
-            except HTTPException: raise
-            except Exception as e:
-                logger.error(f"Media stream error: {e}")
-                raise HTTPException(502,"Ошибка получения файла")
-
-        # Прочие файлы — стримим с disposition=attachment
-        try:
-            async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
-                r = await c.get(download_url)
-                if r.status_code != 200:
-                    raise HTTPException(502,"Ошибка получения файла")
-                fname = msg.content or "file"
-                return Response(
-                    content=r.content,
-                    media_type=mime,
-                    headers={
-                        "Content-Disposition": f'attachment; filename="{fname}"',
-                        "Cache-Control": "public, max-age=3600",
-                    }
-                )
-        except HTTPException: raise
-        except Exception as e:
-            logger.error(f"File download error: {e}")
-            raise HTTPException(502,"Ошибка получения файла")
+        # Редирект напрямую на Яндекс Диск — браузер скачивает сам, не через Railway
+        # Это в разы быстрее чем проксирование через сервер
+        from fastapi.responses import RedirectResponse as _RR
+        return _RR(
+            url=download_url,
+            status_code=302,
+            headers={
+                "Cache-Control": "no-cache",
+                "Access-Control-Allow-Origin": "*",
+            }
+        )
     else:
         raw=base64.b64decode(msg.media_data)
         fname = msg.content or "file"
