@@ -333,6 +333,13 @@ textarea.fi{resize:none}
 .gif-loading{color:var(--t3);text-align:center;padding:20px;font-size:13px}
 
 /* ── VOICE RECORDING ── */
+.vidnote-preview{position:fixed;bottom:90px;right:20px;z-index:100;
+  display:none;flex-direction:column;align-items:center;gap:8px}
+.vidnote-preview.show{display:flex}
+.vidnote-preview video{width:200px;height:200px;border-radius:50%;object-fit:cover;
+  border:3px solid rgba(231,76,60,.8);box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.vidnote-preview .vn-bar{display:flex;align-items:center;gap:8px}
+.vidnote-preview .rec-dot{background:#e74c3c;animation:pulse 1s infinite}
 .voicerec{background:rgba(231,76,60,.1);border-top:1px solid rgba(231,76,60,.2);
   padding:10px 14px;display:none!important;align-items:center;gap:10px;flex-shrink:0}
 .voicerec.show{display:flex!important}
@@ -732,7 +739,20 @@ textarea.fi{resize:none}
   <line x1="12" y1="19" x2="12" y2="22" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
   <line x1="8" y1="22" x2="16" y2="22" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"/>
 </svg>  Голосовое</div>
+          <div class="am-item" onclick="startVidNote()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 17 12 10 16" fill="rgba(255,255,255,0.8)" stroke="none"/></svg>  Видеосообщение</div>
         </div>
+
+      <!-- VIDEO NOTE (кружок) -->
+      <div class="vidnote-preview" id="vidnote-preview">
+        <video id="vidnote-video" autoplay muted playsinline></video>
+        <div class="vn-bar">
+          <div class="rec-dot"></div>
+          <span class="rec-time" id="vidnote-time">0:00</span>
+          <button class="ib danger" onclick="cancelVidNote()" title="Отмена"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="ib accent" onclick="stopVidNote()" title="Отправить"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
+        </div>
+      </div>
+
         <div class="sp hidden" id="sp-panel"></div>
         <div class="gif-panel hidden" id="gif-panel">
           <input class="gif-search" id="gif-search" placeholder="⌕ Поиск GIF..." oninput="srchGif(this.value)" style="font-size:16px">
@@ -1111,6 +1131,7 @@ const S={
   sbTab:'chats',
   // Voice recording
   mediaRec:null, recStream:null, recChunks:[], recTimer:null, recSec:0, recWI:null,
+  vnRec:null, vnStream:null, vnChunks:[], vnTimer:null, vnSec:0,
   // Attach UI
   attachOpen:false, stickersOpen:false, gifOpen:false,
   // WebRTC
@@ -1728,6 +1749,12 @@ function buildContent(msg){
 
   if(t==='image'){const src=mediaSrc();return `<img class="msg-img" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="${esc(msg.content)}">`;}  if(t==='gif'){const src=mediaSrc();return `<img class="msg-gif" src="${src}" loading="lazy" onclick="openLB(this.src)" alt="GIF">`;}
   if(t==='video'){const src=mediaSrc();const mime=msg.media_mime||'video/mp4';
+    const isVidNote=(msg.content||'').startsWith('vidnote.');
+    if(isVidNote){
+      return `<div style="position:relative;display:inline-block;cursor:pointer;width:180px;height:180px" onclick="openLB('${src}','${mime}')">
+        <video style="width:180px;height:180px;border-radius:50%;object-fit:cover;display:block;pointer-events:none" preload="metadata" muted><source src="${src}" type="${mime}"></video>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%"><svg width="44" height="44" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,.4)"/><polygon points="10 8 17 12 10 16" fill="white"/></svg></div></div>`;
+    }
     return `<div style="position:relative;display:inline-block;cursor:pointer;max-width:240px" onclick="openLB('${src}','${mime}')">
       <video style="width:240px;max-height:180px;border-radius:10px;display:block;pointer-events:none" preload="metadata" muted><source src="${src}" type="${mime}"></video>
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:10px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,.5)"/><polygon points="10 8 17 12 10 16" fill="white"/></svg></div></div>`;
@@ -1997,6 +2024,53 @@ async function sendVoice(){
   try{await httpForm(`/api/rooms/${S.roomId}/upload`,fd);}catch(e){toast(e.message,'err');}
 }
 
+/* ════ VIDEO NOTE (кружок) ═══════════════════════ */
+async function startVidNote(){
+  closeAttach();
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:400,height:400},audio:true});
+    S.vnStream=stream;S.vnChunks=[];
+    const video=document.getElementById('vidnote-video');
+    video.srcObject=stream;
+    const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')?'video/webm;codecs=vp9,opus':
+                MediaRecorder.isTypeSupported('video/webm')?'video/webm':'video/mp4';
+    S.vnRec=new MediaRecorder(stream,{mimeType:mime.split(';')[0]});
+    S.vnRec.ondataavailable=e=>{if(e.data.size>0)S.vnChunks.push(e.data);};
+    S.vnRec.onstop=sendVidNote;
+    S.vnRec.start(100);S.vnSec=0;
+    document.getElementById('vidnote-time').textContent='0:00';
+    document.getElementById('vidnote-preview').classList.add('show');
+    S.vnTimer=setInterval(()=>{
+      S.vnSec++;
+      document.getElementById('vidnote-time').textContent=fmtDur(S.vnSec);
+      if(S.vnSec>=60) stopVidNote();
+    },1000);
+  }catch(e){toast('Нет доступа к камере или микрофону','err');}
+}
+function stopVidNote(){
+  if(S.vnRec&&S.vnRec.state!=='inactive') S.vnRec.stop();
+  _stopVnStream();
+}
+function cancelVidNote(){
+  if(S.vnRec) S.vnRec.onstop=null;
+  _stopVnStream();
+  S.vnChunks=[];
+}
+function _stopVnStream(){
+  if(S.vnStream) S.vnStream.getTracks().forEach(t=>t.stop());
+  clearInterval(S.vnTimer);
+  document.getElementById('vidnote-preview').classList.remove('show');
+  const v=document.getElementById('vidnote-video');v.srcObject=null;
+}
+async function sendVidNote(){
+  if(!S.vnChunks||!S.vnChunks.length||!S.roomId) return;
+  const mime=S.vnChunks[0].type||'video/webm';
+  const blob=new Blob(S.vnChunks,{type:mime});
+  const ext=mime.includes('mp4')?'mp4':'webm';
+  const fd=new FormData();fd.append('file',new File([blob],`vidnote.${ext}`,{type:mime}));
+  try{await httpForm(`/api/rooms/${S.roomId}/upload`,fd);}catch(e){toast(e.message,'err');}
+}
+
 /* ════ VOICE PLAYER ═══════════════════════════════ */
 // Кэш прямых ссылок (живут ~1 час у Яндекса)
 const _mediaUrlCache={};
@@ -2153,7 +2227,7 @@ async function showMembers(){
   el.innerHTML='<div class="spinner" style="padding:16px"></div>';
   try{
     const ms=await http('GET',`/api/rooms/${S.roomId}/members`);
-    el.innerHTML=ms.map(m=>`<div class="ur">${avHtml(m,'av32')}<div class="uri"><div class="urn">${esc(dn(m))}${m.id===S.me.id?' <span style="color:var(--t3);font-size:11px">(вы)</span>':''}${m.is_admin?' <span style="color:var(--acc);font-size:11px">admin</span>':''}</div><div class="ust ${m.is_online?'on':''}">${m.is_online?'онлайн':(m.last_seen?`был ${fmtLastSeen(m.last_seen)}`:'оффлайн')}</div></div></div>`).join('');
+    el.innerHTML=ms.map(m=>`<div class="ur" onclick="closeM('m-mbrs');showUserProfile(${m.id})" style="cursor:pointer">${avHtml(m,'av32')}<div class="uri"><div class="urn">${esc(dn(m))}${m.id===S.me.id?' <span style="color:var(--t3);font-size:11px">(вы)</span>':''}${m.is_admin?' <span style="color:var(--acc);font-size:11px">admin</span>':''}</div><div class="ust ${m.is_online?'on':''}">${m.is_online?'онлайн':(m.last_seen?`был ${fmtLastSeen(m.last_seen)}`:'оффлайн')}</div></div></div>`).join('');
     // Кнопка управления для Admin
     if(isGrp&&amAdmin){
       el.innerHTML+=`<button class="btn btn-ghost btn-full" style="margin-top:14px" onclick="openManageMembers()"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHBhdGggZD0iTTE5LjQgMTVDMTkuMjY2OSAxNS4zMDE2IDE5LjIyNzIgMTUuNjM2MiAxOS4yODYgMTUuOTYwNkMxOS4zNDQ4IDE2LjI4NSAxOS40OTk1IDE2LjU4NDMgMTkuNzMgMTYuODJMMTkuNzkgMTYuODhDMTkuOTc2IDE3LjA2NTcgMjAuMTIzNSAxNy4yODYzIDIwLjIyNDEgMTcuNTI5MUMyMC4zMjQ4IDE3Ljc3MTkgMjAuMzc2NiAxOC4wMzIyIDIwLjM3NjYgMTguMjk1QzIwLjM3NjYgMTguNTU3OCAyMC4zMjQ4IDE4LjgxODEgMjAuMjI0MSAxOS4wNjA5QzIwLjEyMzUgMTkuMzAzNyAxOS45NzYgMTkuNTI0MyAxOS43OSAxOS43MUMxOS42MDQzIDE5Ljg5NiAxOS4zODM3IDIwLjA0MzUgMTkuMTQwOSAyMC4xNDQxQzE4Ljg5ODEgMjAuMjQ0OCAxOC42Mzc4IDIwLjI5NjYgMTguMzc1IDIwLjI5NjZDMTguMTEyMiAyMC4yOTY2IDE3Ljg1MTkgMjAuMjQ0OCAxNy42MDkxIDIwLjE0NDFDMTcuMzY2MyAyMC4wNDM1IDE3LjE0NTcgMTkuODk2IDE2Ljk2IDE5LjcxTDE2LjkgMTkuNjVDMTYuNjY0MyAxOS40MTk1IDE2LjM2NSAxOS4yNjQ4IDE2LjA0MDYgMTkuMjA2QzE1LjcxNjIgMTkuMTQ3MiAxNS4zODE2IDE5LjE4NjkgMTUuMDggMTkuMzJDMTQuNzg0MiAxOS40NDY4IDE0LjUzMiAxOS42NTcyIDE0LjM1NDMgMTkuOTI1NUMxNC4xNzY2IDIwLjE5MzggMTQuMDgxMyAyMC41MDgyIDE0LjA4IDIwLjgzVjIxQzE0LjA4IDIxLjUzMDQgMTMuODY5MyAyMi4wMzkxIDEzLjQ5NDIgMjIuNDE0MkMxMy4xMTkxIDIyLjc4OTMgMTIuNjEwNCAyMyAxMi4wOCAyM0MxMS41NDk2IDIzIDExLjA0MDkgMjIuNzg5MyAxMC42NjU4IDIyLjQxNDJDMTAuMjkwNyAyMi4wMzkxIDEwLjA4IDIxLjUzMDQgMTAuMDggMjFWMjAuOTFDMTAuMDcyMyAyMC41NzkgOS45NjUxMiAyMC4yNTggOS43NzI1MSAxOS45ODg3QzkuNTc5OSAxOS43MTk0IDkuMzEwNzQgMTkuNTE0MyA5IDE5LjRDOC42OTgzOCAxOS4yNjY5IDguMzYzODEgMTkuMjI3MiA4LjAzOTQxIDE5LjI4NkM3LjcxNTAyIDE5LjM0NDggNy40MTU2OCAxOS40OTk1IDcuMTggMTkuNzNMNy4xMiAxOS43OUM2LjkzNDI1IDE5Ljk3NiA2LjcxMzY4IDIwLjEyMzUgNi40NzA4OCAyMC4yMjQxQzYuMjI4MDggMjAuMzI0OCA1Ljk2NzgzIDIwLjM3NjYgNS43MDUgMjAuMzc2NkM1LjQ0MjE3IDIwLjM3NjYgNS4xODE5MiAyMC4zMjQ4IDQuOTM5MTIgMjAuMjI0MUM0LjY5NjMyIDIwLjEyMzUgNC40NzU3NSAxOS45NzYgNC4yOSAxOS43OUM0LjEwNDA1IDE5LjYwNDMgMy45NTY1MyAxOS4zODM3IDMuODU1ODggMTkuMTQwOUMzLjc1NTIzIDE4Ljg5ODEgMy43MDM0MyAxOC42Mzc4IDMuNzAzNDMgMTguMzc1QzMuNzAzNDMgMTguMTEyMiAzLjc1NTIzIDE3Ljg1MTkgMy44NTU4OCAxNy42MDkxQzMuOTU2NTMgMTcuMzY2MyA0LjEwNDA1IDE3LjE0NTcgNC4yOSAxNi45Nkw0LjM1IDE2LjlDNC41ODA1NCAxNi42NjQzIDQuNzM1MTkgMTYuMzY1IDQuNzk0IDE2LjA0MDZDNC44NTI4MiAxNS43MTYyIDQuODEzMTIgMTUuMzgxNiA0LjY4IDE1LjA4QzQuNTUzMjQgMTQuNzg0MiA0LjM0Mjc2IDE0LjUzMiA0LjA3NDQ3IDE0LjM1NDNDMy44MDYxOCAxNC4xNzY2IDMuNDkxNzkgMTQuMDgxMyAzLjE3IDE0LjA4SDNDMi40Njk1NyAxNC4wOCAxLjk2MDg2IDEzLjg2OTMgMS41ODU3OSAxMy40OTQyQzEuMjEwNzEgMTMuMTE5MSAxIDEyLjYxMDQgMSAxMi4wOEMxIDExLjU0OTYgMS4yMTA3MSAxMS4wNDA5IDEuNTg1NzkgMTAuNjY1OEMxLjk2MDg2IDEwLjI5MDcgMi40Njk1NyAxMC4wOCAzIDEwLjA4SDMuMDlDMy40MjA5OSAxMC4wNzIzIDMuNzQyIDkuOTY1MTIgNC4wMTEzIDkuNzcyNTFDNC4yODA1OSA5LjU3OTkgNC40ODU3MiA5LjMxMDc0IDQuNiA5QzQuNzMzMTIgOC42OTgzOCA0Ljc3MjgyIDguMzYzODEgNC43MTQgOC4wMzk0MUM0LjY1NTE5IDcuNzE1MDIgNC41MDA1NCA3LjQxNTY4IDQuMjcgNy4xOEw0LjIxIDcuMTJDNC4wMjQwNSA2LjkzNDI1IDMuODc2NTMgNi43MTM2OCAzLjc3NTg4IDYuNDcwODhDMy42NzUyMyA2LjIyODA4IDMuNjIzNDMgNS45Njc4MyAzLjYyMzQzIDUuNzA1QzMuNjIzNDMgNS40NDIxNyAzLjY3NTIzIDUuMTgxOTIgMy43NzU4OCA0LjkzOTEyQzMuODc2NTMgNC42OTYzMiA0LjAyNDA1IDQuNDc1NzUgNC4yMSA0LjI5QzQuMzk1NzUgNC4xMDQwNSA0LjYxNjMyIDMuOTU2NTMgNC44NTkxMiAzLjg1NTg4QzUuMTAxOTIgMy43NTUyMyA1LjM2MjE3IDMuNzAzNDMgNS42MjUgMy43MDM0M0M1Ljg4NzgzIDMuNzAzNDMgNi4xNDgwOCAzLjc1NTIzIDYuMzkwODggMy44NTU4OEM2LjYzMzY4IDMuOTU2NTMgNi44NTQyNSA0LjEwNDA1IDcuMDQgNC4yOUw3LjEgNC4zNUM3LjMzNTY4IDQuNTgwNTQgNy42MzUwMiA0LjczNTE5IDcuOTU5NDEgNC43OTRDOC4yODM4MSA0Ljg1MjgyIDguNjE4MzggNC44MTMxMiA4LjkyIDQuNjhIOUM5LjI5NTc3IDQuNTUzMjQgOS41NDgwMiA0LjM0Mjc2IDkuNzI1NjkgNC4wNzQ0N0M5LjkwMzM3IDMuODA2MTggOS45OTg3MiAzLjQ5MTc5IDEwIDMuMTdWM0MxMCAyLjQ2OTU3IDEwLjIxMDcgMS45NjA4NiAxMC41ODU4IDEuNTg1NzlDMTAuOTYwOSAxLjIxMDcxIDExLjQ2OTYgMSAxMiAxQzEyLjUzMDQgMSAxMy4wMzkxIDEuMjEwNzEgMTMuNDE0MiAxLjU4NTc5QzEzLjc4OTMgMS45NjA4NiAxNCAyLjQ2OTU3IDE0IDNWMy4wOUMxNC4wMDEzIDMuNDExNzkgMTQuMDk2NiAzLjcyNjE4IDE0LjI3NDMgMy45OTQ0N0MxNC40NTIgNC4yNjI3NiAxNC43MDQyIDQuNDczMjQgMTUgNC42QzE1LjMwMTYgNC43MzMxMiAxNS42MzYyIDQuNzcyODIgMTUuOTYwNiA0LjcxNEMxNi4yODUgNC42NTUxOSAxNi41ODQzIDQuNTAwNTQgMTYuODIgNC4yN0wxNi44OCA0LjIxQzE3LjA2NTcgNC4wMjQwNSAxNy4yODYzIDMuODc2NTMgMTcuNTI5MSAzLjc3NTg4QzE3Ljc3MTkgMy42NzUyMyAxOC4wMzIyIDMuNjIzNDMgMTguMjk1IDMuNjIzNDNDMTguNTU3OCAzLjYyMzQzIDE4LjgxODEgMy42NzUyMyAxOS4wNjA5IDMuNzc1ODhDMTkuMzAzNyAzLjg3NjUzIDE5LjUyNDMgNC4wMjQwNSAxOS43MSA0LjIxQzE5Ljg5NiA0LjM5NTc1IDIwLjA0MzUgNC42MTYzMiAyMC4xNDQxIDQuODU5MTJDMjAuMjQ0OCA1LjEwMTkyIDIwLjI5NjYgNS4zNjIxNyAyMC4yOTY2IDUuNjI1QzIwLjI5NjYgNS44ODc4MyAyMC4yNDQ4IDYuMTQ4MDggMjAuMTQ0MSA2LjM5MDg4QzIwLjA0MzUgNi42MzM2OCAxOS44OTYgNi44NTQyNSAxOS43MSA3LjA0TDE5LjY1IDcuMUMxOS40MTk1IDcuMzM1NjggMTkuMjY0OCA3LjYzNTAyIDE5LjIwNiA3Ljk1OTQxQzE5LjE0NzIgOC4yODM4MSAxOS4xODY5IDguNjE4MzggMTkuMzIgOC45MlY5QzE5LjQ0NjggOS4yOTU3NyAxOS42NTcyIDkuNTQ4MDIgMTkuOTI1NSA5LjcyNTY5QzIwLjE5MzggOS45MDMzNyAyMC41MDgyIDkuOTk4NzIgMjAuODMgMTBIMjFDMjEuNTMwNCAxMCAyMi4wMzkxIDEwLjIxMDcgMjIuNDE0MiAxMC41ODU4QzIyLjc4OTMgMTAuOTYwOSAyMyAxMS40Njk2IDIzIDEyQzIzIDEyLjUzMDQgMjIuNzg5MyAxMy4wMzkxIDIyLjQxNDIgMTMuNDE0MkMyMi4wMzkxIDEzLjc4OTMgMjEuNTMwNCAxNCAyMSAxNEgyMC45MUMyMC41ODgyIDE0LjAwMTMgMjAuMjczOCAxNC4wOTY2IDIwLjAwNTUgMTQuMjc0M0MxOS43MzcyIDE0LjQ1MiAxOS41MjY4IDE0LjcwNDIgMTkuNCAxNVoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjgpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=" width="16" height="16" style="display:inline-block;vertical-align:middle" alt=""> Управление участниками</button>`;
