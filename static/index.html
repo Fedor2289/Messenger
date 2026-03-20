@@ -1498,6 +1498,8 @@ function swSBTab(t){
   if(t==='channels'&&alreadyOn) openChannelsExplore();
 }
 
+let _rrTO=null;
+function renderRoomsDebounced(){clearTimeout(_rrTO);_rrTO=setTimeout(()=>renderRooms(),50);}
 function renderRooms(list){
   list=list||S.rooms;
   const el=document.getElementById('chatlist');
@@ -2038,9 +2040,13 @@ async function handleFile(input){
   if(file.size>200*1024*1024){toast('Файл слишком большой (макс. 200 МБ)','err');return;}
   const fd=new FormData();fd.append('file',file);
   if(S.replyTo) fd.append('reply_to_id',S.replyTo.id);
-  const _fn=file.name;showUploadBar(_fn.length>30?_fn.slice(0,27)+'...':_fn);
+  const _fn=file.name;
+  showUploadBar(_fn.length>30?_fn.slice(0,27)+'...':_fn);
   try{
-    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>setUploadProgress(pct));
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      setUploadProgress(pct);
+      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
+    });
     hideUploadBar();cancelReply();
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
@@ -2074,7 +2080,10 @@ async function sendVoice(){
   const fd=new FormData();fd.append('file',new File([blob],`voice.${ext}`,{type:mime}));
   showUploadBar('Отправка голосового...');
   try{
-    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{setUploadProgress(pct);});
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      setUploadProgress(pct);
+      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
+    });
     hideUploadBar();
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
@@ -2148,7 +2157,10 @@ async function sendVidNote(){
   const fd=new FormData();fd.append('file',new File([blob],`vidnote.${ext}`,{type:mime}));
   showUploadBar('Отправка видеосообщения...');
   try{
-    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{setUploadProgress(pct);});
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      setUploadProgress(pct);
+      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
+    });
     hideUploadBar();
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
