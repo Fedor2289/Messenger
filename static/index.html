@@ -2038,8 +2038,11 @@ async function handleFile(input){
   if(file.size>200*1024*1024){toast('Файл слишком большой (макс. 200 МБ)','err');return;}
   const fd=new FormData();fd.append('file',file);
   if(S.replyTo) fd.append('reply_to_id',S.replyTo.id);
-  toast('Загрузка...');
-  try{await httpForm(`/api/rooms/${S.roomId}/upload`,fd);cancelReply();}catch(e){toast(e.message,'err');}
+  const _fn=file.name;showUploadBar(_fn.length>30?_fn.slice(0,27)+'...':_fn);
+  try{
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>setUploadProgress(pct));
+    hideUploadBar();cancelReply();
+  }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
 /* ════ VOICE RECORDING ════════════════════════════ */
