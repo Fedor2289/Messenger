@@ -758,17 +758,25 @@ async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Sessio
         download_url=await yadisk_get_download_url(public_key)
         if not download_url: raise HTTPException(503,"Не удалось получить файл с Яндекс Диска")
 
-        # Редирект напрямую на Яндекс Диск — браузер скачивает сам, не через Railway
-        # Это в разы быстрее чем проксирование через сервер
-        from fastapi.responses import RedirectResponse as _RR
-        return _RR(
-            url=download_url,
-            status_code=302,
-            headers={
-                "Cache-Control": "no-cache",
-                "Access-Control-Allow-Origin": "*",
-            }
-        )
+        mime_type = mime
+        fname = msg.content or "file"
+        disposition = "attachment" if dl else "inline"
+
+        # Стримим чанками — не держим весь файл в памяти
+        async def _stream():
+            async with httpx.AsyncClient(timeout=300, follow_redirects=True) as c:
+                async with c.stream("GET", download_url) as r:
+                    async for chunk in r.aiter_bytes(chunk_size=65536):
+                        yield chunk
+
+        from fastapi.responses import StreamingResponse as _SR
+        headers = {
+            "Content-Disposition": f'{disposition}; filename="{fname}"',
+            "Accept-Ranges": "none",
+            "Cache-Control": "public, max-age=3600",
+            "Access-Control-Allow-Origin": "*",
+        }
+        return _SR(_stream(), media_type=mime_type, headers=headers)
     else:
         raw=base64.b64decode(msg.media_data)
         fname = msg.content or "file"
