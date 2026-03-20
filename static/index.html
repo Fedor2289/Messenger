@@ -1101,6 +1101,18 @@ textarea.fi{resize:none}
 </div>
 
 <div id="toasts"></div>
+<div id="upload-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:600;padding:0">
+  <div style="background:var(--bg2);border-top:1px solid var(--brd);padding:8px 16px;display:flex;align-items:center;gap:10px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <div style="flex:1">
+      <div style="font-size:12px;color:var(--t2);margin-bottom:4px" id="upload-label">Загрузка...</div>
+      <div style="background:var(--bg3);border-radius:4px;height:4px;overflow:hidden">
+        <div id="upload-progress" style="height:4px;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px;width:0%;transition:width .2s ease"></div>
+      </div>
+    </div>
+    <span id="upload-pct" style="font-size:12px;color:var(--acc);font-weight:600;min-width:36px;text-align:right">0%</span>
+  </div>
+</div>
 
 <!-- MODAL: USER PROFILE VIEW -->
 <div class="ov" id="m-user-profile" onclick="closeOv(event,'m-user-profile')">
@@ -1180,12 +1192,40 @@ async function http(m,p,b,ps={}){
   if(!r.ok){const e=await r.json().catch(()=>({detail:'Ошибка сервера'}));throw new Error(e.detail||'Ошибка');}
   return r.json();
 }
-async function httpForm(p,fd){
+function httpForm(p,fd,onProgress){
   const u=new URL(API+p);
   if(S.token) u.searchParams.set('token',S.token);
-  const r=await fetch(u,{method:'POST',body:fd});
-  if(!r.ok){const e=await r.json().catch(()=>({detail:'Ошибка'}));throw new Error(e.detail||'Ошибка');}
-  return r.json();
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST',u.toString());
+    xhr.upload.onprogress=e=>{
+      if(e.lengthComputable&&onProgress) onProgress(Math.round(e.loaded/e.total*100));
+    };
+    xhr.onload=()=>{
+      if(xhr.status>=200&&xhr.status<300){
+        try{resolve(JSON.parse(xhr.responseText));}catch{resolve({});}
+      } else {
+        let msg='Ошибка';
+        try{msg=JSON.parse(xhr.responseText).detail||msg;}catch{}
+        reject(new Error(msg));
+      }
+    };
+    xhr.onerror=()=>reject(new Error('Ошибка сети'));
+    xhr.send(fd);
+  });
+}
+function showUploadBar(label){
+  document.getElementById('upload-bar').style.display='';
+  document.getElementById('upload-label').textContent=label||'Загрузка...';
+  document.getElementById('upload-progress').style.width='0%';
+  document.getElementById('upload-pct').textContent='0%';
+}
+function setUploadProgress(pct){
+  document.getElementById('upload-progress').style.width=pct+'%';
+  document.getElementById('upload-pct').textContent=pct+'%';
+}
+function hideUploadBar(){
+  document.getElementById('upload-bar').style.display='none';
 }
 function esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s||''));return d.innerHTML;}
 function fmtTime(iso){const s=iso&&!iso.endsWith('Z')&&!iso.includes('+')?(iso+'Z'):iso;return new Date(s).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'});}
@@ -2029,7 +2069,11 @@ async function sendVoice(){
   const blob=new Blob(S.recChunks,{type:mime});
   const ext=mime.includes('ogg')?'ogg':'webm';
   const fd=new FormData();fd.append('file',new File([blob],`voice.${ext}`,{type:mime}));
-  try{await httpForm(`/api/rooms/${S.roomId}/upload`,fd);}catch(e){toast(e.message,'err');}
+  showUploadBar('Отправка голосового...');
+  try{
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{setUploadProgress(pct);});
+    hideUploadBar();
+  }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
 /* ════ VIDEO NOTE (кружок) ═══════════════════════ */
@@ -2099,7 +2143,11 @@ async function sendVidNote(){
   const blob=new Blob(S.vnChunks,{type:mime});
   const ext=mime.includes('mp4')?'mp4':'webm';
   const fd=new FormData();fd.append('file',new File([blob],`vidnote.${ext}`,{type:mime}));
-  try{await httpForm(`/api/rooms/${S.roomId}/upload`,fd);}catch(e){toast(e.message,'err');}
+  showUploadBar('Отправка видеосообщения...');
+  try{
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{setUploadProgress(pct);});
+    hideUploadBar();
+  }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
 /* ════ VOICE PLAYER ═══════════════════════════════ */
