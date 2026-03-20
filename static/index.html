@@ -1188,10 +1188,11 @@ async function httpForm(p,fd){
   return r.json();
 }
 function esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s||''));return d.innerHTML;}
-function fmtTime(iso){return new Date(iso).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'});}
+function fmtTime(iso){const s=iso&&!iso.endsWith('Z')&&!iso.includes('+')?(iso+'Z'):iso;return new Date(s).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'});}
 function fmtDate(iso){
   const tz='Europe/Moscow';
-  const d=new Date(iso);
+  const s=iso&&!iso.endsWith('Z')&&!iso.includes('+')?(iso+'Z'):iso;
+  const d=new Date(s);
   const ds=d.toLocaleDateString('ru',{timeZone:tz});
   const ts=new Date().toLocaleDateString('ru',{timeZone:tz});
   const ys=new Date(Date.now()-86400000).toLocaleDateString('ru',{timeZone:tz});
@@ -1201,7 +1202,7 @@ function fmtDate(iso){
 }
 function fmtSz(b){if(!b)return '';if(b<1024)return b+'Б';if(b<1048576)return (b/1024).toFixed(1)+'КБ';return (b/1048576).toFixed(1)+'МБ';}
 function fmtDur(s){return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;}
-function fmtLastSeen(ls){if(!ls)return 'давно';const d=new Date(ls),n=new Date();const diff=(n-d)/1000;if(diff<60)return 'только что';if(diff<3600)return `${Math.floor(diff/60)} мин назад`;if(diff<86400)return fmtTime(ls);return fmtDate(ls);}
+function fmtLastSeen(ls){if(!ls)return 'давно';const _s=ls&&!ls.endsWith('Z')&&!ls.includes('+')?(ls+'Z'):ls;const d=new Date(_s),n=new Date();const diff=(n-d)/1000;if(diff<60)return 'только что';if(diff<3600)return `${Math.floor(diff/60)} мин назад`;if(diff<86400)return fmtTime(ls);return fmtDate(ls);}
 function toast(msg,type=''){const el=document.createElement('div');el.className='toast'+(type?' '+type:'');el.textContent=msg;document.getElementById('toasts').appendChild(el);setTimeout(()=>el.remove(),3200);}
 function ini(n){return n?(n[0]).toUpperCase():'?';}
 function dn(u){return u.display_name||u.username;}
