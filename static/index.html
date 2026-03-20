@@ -1258,10 +1258,10 @@ function startCloudProgress(){
   if(bar){bar.style.animation='';bar.style.transition='width .4s ease';bar.style.width='0%';}
   document.getElementById('upload-label').textContent='Сохранение в облаке...';
   _cloudProgressInt=setInterval(()=>{
-    _cloudPct=Math.min(95,_cloudPct+Math.random()*4+1);
+    _cloudPct=Math.min(95,_cloudPct+Math.random()*1.2+0.3);
     if(bar) bar.style.width=_cloudPct+'%';
     if(pctEl) pctEl.textContent=Math.round(_cloudPct)+'%';
-  },200);
+  },300);
 }
 function finishCloudProgress(msg){
   clearInterval(_cloudProgressInt);
@@ -1468,7 +1468,10 @@ function handleWS(d){
 }
 
 function onWsMsg(msg){
-  if(msg.msg_type==='ringtone') return;  // системное сообщение, скрываем
+  if(msg.msg_type==='ringtone') return;
+  // Убираем индикатор печатания ИИ и временные сообщения
+  document.getElementById('ai-typing')?.remove();
+  document.querySelectorAll('.mw[data-id^="tmp-"]').forEach(el=>el.remove());
   const room=S.rooms.find(r=>r.id===msg.room_id);
   if(room){room.last_message=msg;if(S.roomId!==msg.room_id)room.unread_count=(room.unread_count||0)+1;S.rooms=[room,...S.rooms.filter(r=>r.id!==msg.room_id)];}
   else{loadRooms();return;}
@@ -1976,7 +1979,6 @@ async function sendMsg(){
     ta.value='';ta.style.height='auto';
     try{
       const aiBody={message:txt,room_id:S.roomId};
-      // Если есть прикреплённый файл для ИИ
       if(S._aiPendingFile){
         aiBody.file_data=S._aiPendingFile.data;
         aiBody.file_name=S._aiPendingFile.name;
@@ -1984,8 +1986,34 @@ async function sendMsg(){
         S._aiPendingFile=null;
         _clearAiFilePreview();
       }
+      // Показываем сообщение пользователя сразу (оптимистично)
+      const fakeUserMsg={
+        id:'tmp-'+Date.now(),msg_type:'text',content:txt,
+        sender_id:S.me.id,room_id:S.roomId,
+        created_at:new Date().toISOString(),
+        is_read:true,is_deleted:false,is_pinned:false,
+        edited_at:null,reply_to:null,reactions:{},
+        sender:{id:S.me.id,username:S.me.username,display_name:S.me.display_name,
+          avatar_img:S.me.avatar_img,avatar_color:S.me.avatar_color||'#5288c1',is_online:true}
+      };
+      appendMsg(fakeUserMsg);scrollBot();
+      // Показываем индикатор печатания ИИ
+      const typingEl=document.createElement('div');
+      typingEl.id='ai-typing';typingEl.className='mw in first';
+      typingEl.innerHTML='<div style="width:32px;flex-shrink:0"></div><div class="bbl ai-bbl" style="padding:10px 14px"><div class="tyd"><span></span><span></span><span></span></div></div>';
+      document.getElementById('msgs').appendChild(typingEl);
+      scrollBot();
       await http('POST','/api/ai/message',aiBody);
-    }catch(e){toast(e.message,'err');}
+      // Убираем индикатор - реальные сообщения придут через WS
+      document.getElementById('ai-typing')?.remove();
+      // Перезагружаем сообщения если WS не обновил
+      setTimeout(async()=>{
+        if(document.querySelector('.mw[data-id="tmp-'+fakeUserMsg.id.split('-').pop()+'"]')){
+          const data=await http('GET',`/api/rooms/${S.roomId}/messages`).catch(()=>null);
+          if(data)renderMsgs(data.messages,false);
+        }
+      },800);
+    }catch(e){document.getElementById('ai-typing')?.remove();toast(e.message,'err');}
     return;
   }
 
