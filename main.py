@@ -147,7 +147,7 @@ async def yadisk_upload(raw: bytes, filename: str, mime: str) -> str:
     disk_path = f"/{YADISK_FOLDER}/{unique_name}"
     
     try:
-        async with httpx.AsyncClient(timeout=300) as c:
+        async with httpx.AsyncClient(timeout=60) as c:
             headers = {"Authorization": f"OAuth {YADISK_TOKEN}"}
             
             # Создаём папку если нет
@@ -298,6 +298,7 @@ def room_dict(room, viewer_id, db):
         "is_online":manager.is_online(m.user.id),
         "is_admin":m.is_admin,
         "last_seen":m.user.last_seen.isoformat() if getattr(m.user,"last_seen",None) else None,
+        "bio":getattr(m.user,"bio",None),
     } for m in room.members]
     last=(db.query(models.Message)
           .options(joinedload(models.Message.sender),
@@ -740,7 +741,7 @@ async def get_media(msg_id:int, token:str=Query(...), dl:int=Query(0), db:Sessio
         # Аудио, видео и изображения — стримим через сервер (нужен для CORS и браузерной совместимости)
         if mime.startswith("audio/") or mime.startswith("video/") or mime.startswith("image/"):
             try:
-                async with httpx.AsyncClient(timeout=300, follow_redirects=True) as c:
+                async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
                     r = await c.get(download_url)
                     if r.status_code != 200:
                         raise HTTPException(502,"Ошибка получения файла")

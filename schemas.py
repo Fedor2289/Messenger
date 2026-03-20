@@ -42,7 +42,7 @@ class UserShort(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int; username: str; display_name: Optional[str] = None
     avatar_img: Optional[str] = None; is_online: bool; avatar_color: Optional[str] = "#5288c1"
-    last_seen: Optional[datetime] = None
+    last_seen: Optional[datetime] = None; bio: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str; token_type: str = "bearer"; user: UserOut
