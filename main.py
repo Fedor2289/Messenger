@@ -925,16 +925,15 @@ async def _call_ai(messages:list, file_context:dict=None) -> str:
     # Пробуем Groq (поддерживает vision через llama-3.2-vision)
     if GROQ_API_KEY and AI_BACKEND in ("groq","auto"):
         try:
-            model = "llama-3.2-11b-vision-preview" if file_context and file_context.get("type")=="image" else "llama-3.1-8b-instant"
+            model = "meta-llama/llama-4-scout-17b-16e-instruct" if file_context and file_context.get("type")=="image" else "llama-3.1-8b-instant"
             async with httpx.AsyncClient(timeout=30) as c:
                 r=await c.post("https://api.groq.com/openai/v1/chat/completions",
                     headers={"Authorization":f"Bearer {GROQ_API_KEY}","Content-Type":"application/json"},
                     json={"model":model,"messages":payload_with_system,"max_tokens":1024})
                 if r.status_code==200:
                     return r.json()["choices"][0]["message"]["content"]
-                elif r.status_code==413:
-                    logger.warning("Groq 413: payload too large, retrying without image")
-                    # Повторяем без изображения
+                elif r.status_code in (413, 400):
+                    logger.warning(f"Groq {r.status_code}: retrying without image")
                     text_only2 = [{"role":m["role"],"content":m["content"] if isinstance(m["content"],str) else next((c["text"] for c in m["content"] if c["type"]=="text"),"[изображение]")} for m in payload_with_system]
                     r2 = await c.post("https://api.groq.com/openai/v1/chat/completions",
                         headers={"Authorization":f"Bearer {GROQ_API_KEY}","Content-Type":"application/json"},
@@ -953,7 +952,7 @@ async def _call_ai(messages:list, file_context:dict=None) -> str:
             async with httpx.AsyncClient(timeout=30) as c:
                 r=await c.post("https://api.cerebras.ai/v1/chat/completions",
                     headers={"Authorization":f"Bearer {CEREBRAS_KEY}","Content-Type":"application/json"},
-                    json={"model":"llama3.1-70b","messages":text_only,"max_tokens":1024})
+                    json={"model":"llama-3.3-70b","messages":text_only,"max_tokens":1024})
                 if r.status_code==200:
                     return r.json()["choices"][0]["message"]["content"]
         except Exception as e: logger.error(f"Cerebras error: {e}")
