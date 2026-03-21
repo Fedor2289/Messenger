@@ -10,3 +10,4 @@ email-validator==2.1.1
 python-multipart==0.0.9
 httpx==0.27.0
 pywebpush==2.0.0
+Pillow>=10.0.0

@@ -24,17 +24,6 @@ from websocket_manager import manager
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-import time as _time
-_yadisk_url_cache: dict = {}
-_CACHE_TTL = 1800
-
-def _cache_get(key):
-    e = _yadisk_url_cache.get(key)
-    return e[0] if e and _time.time() < e[1] else None
-
-def _cache_set(key, url):
-    _yadisk_url_cache[key] = (url, _time.time() + _CACHE_TTL)
-
 # Кеш прямых ссылок с Яндекс Диска (живут ~30 минут)
 import time as _time
 _yadisk_url_cache: dict = {}  # public_key -> (url, expires_at)
@@ -235,9 +224,12 @@ async def yadisk_upload(raw: bytes, filename: str, mime: str) -> str:
         return ""
 
 async def yadisk_get_download_url(public_key: str) -> str:
-    if not YADISK_TOKEN: return ""
+    """Получает прямую ссылку для скачивания с Яндекс Диска (с кешем)"""
+    if not YADISK_TOKEN:
+        return ""
     cached = _cache_get(public_key)
-    if cached: return cached
+    if cached:
+        return cached
     try:
         async with httpx.AsyncClient(timeout=10) as c:
             r = await c.get(
@@ -726,16 +718,14 @@ async def upload(rid:int, token:str=Query(...), file:UploadFile=File(...),
     db.add(msg); db.commit()
     m=load_msg(db,msg.id)
     ids=[mb.user_id for mb in db.query(models.RoomMember).filter_by(room_id=rid).all()]
-    md=msg_dict(m)
-    await manager.broadcast(ids,{"type":"new_message","message":md})
-    # Push всем кроме отправителя
-    _sndr = md.get("sender") or {}
-    sender_name = _sndr.get("display_name") or _sndr.get("username") or "Кто-то"
-    pbody = md.get("content","")[:80] if md.get("msg_type")=="text" else "📎 Медиафайл"
+    await manager.broadcast(ids,{"type":"new_message","message":msg_dict(m)})
+    # Push всем кроме отправителя (сервис-воркер сам решит показывать или нет)
+    _sndr = m.get("sender") or {}; sender_name = _sndr.get("display_name") or _sndr.get("username") or "Кто-то"
+    pbody = m["content"][:80] if m.get("msg_type")=="text" else "📎 Медиафайл"
     for uid in ids:
         if uid != me.id:
             await send_push_to_user(db, uid, sender_name, pbody, room_id=rid)
-    return md
+    return msg_dict(m)
 
 @app.get("/api/media/{msg_id}/url")
 async def get_media_url(msg_id:int, token:str=Query(...), db:Session=Depends(get_db)):
@@ -890,24 +880,37 @@ async def ai_message(body:schemas.AIMessageRequest, token:str=Query(...), db:Ses
 async def _call_ai(messages:list, file_context:dict=None) -> str:
     system={"role":"system","content":"Ты полезный ИИ-ассистент в мессенджере. Отвечай на русском языке, кратко и по делу. Если пользователь прислал файл или изображение — проанализируй его содержимое."}
 
-    # Если есть изображение — добавляем vision контент к последнему сообщению
-    payload_msgs = []
-    for m in messages[-18:]:
-        payload_msgs.append(m)
+    payload_msgs = [m for m in messages[-18:]]
 
     if file_context and file_context.get("type") == "image":
-        # Заменяем последнее сообщение пользователя на multimodal
         img_data = file_context["data"]
         img_mime = file_context["mime"]
-        # Извлекаем base64 из data URL
+        # Извлекаем base64
         if "," in img_data:
             img_b64 = img_data.split(",", 1)[1]
         else:
             img_b64 = img_data
-        # Находим последнее сообщение пользователя и делаем его multimodal
+
+        # Уменьшаем изображение если слишком большое (Groq лимит ~4MB base64)
+        try:
+            import base64 as _b64, io as _io
+            raw = _b64.b64decode(img_b64)
+            if len(raw) > 1_500_000:  # > 1.5MB — сжимаем
+                from PIL import Image as _Img
+                img = _Img.open(_io.BytesIO(raw))
+                img.thumbnail((1024, 1024), _Img.LANCZOS)
+                buf = _io.BytesIO()
+                img.save(buf, format='JPEG', quality=75)
+                img_b64 = _b64.b64encode(buf.getvalue()).decode()
+                img_mime = 'image/jpeg'
+                logger.info(f"Image resized for AI: {len(raw)//1024}KB -> {len(buf.getvalue())//1024}KB")
+        except Exception as e:
+            logger.warning(f"Image resize failed: {e}")
+
+        # Добавляем изображение к последнему сообщению пользователя
         for i in range(len(payload_msgs)-1, -1, -1):
             if payload_msgs[i]["role"] == "user":
-                text_part = payload_msgs[i]["content"]
+                text_part = payload_msgs[i]["content"] if isinstance(payload_msgs[i]["content"], str) else "Что на этом изображении?"
                 payload_msgs[i] = {
                     "role": "user",
                     "content": [
@@ -929,6 +932,17 @@ async def _call_ai(messages:list, file_context:dict=None) -> str:
                     json={"model":model,"messages":payload_with_system,"max_tokens":1024})
                 if r.status_code==200:
                     return r.json()["choices"][0]["message"]["content"]
+                elif r.status_code==413:
+                    logger.warning("Groq 413: payload too large, retrying without image")
+                    # Повторяем без изображения
+                    text_only2 = [{"role":m["role"],"content":m["content"] if isinstance(m["content"],str) else next((c["text"] for c in m["content"] if c["type"]=="text"),"[изображение]")} for m in payload_with_system]
+                    r2 = await c.post("https://api.groq.com/openai/v1/chat/completions",
+                        headers={"Authorization":f"Bearer {GROQ_API_KEY}","Content-Type":"application/json"},
+                        json={"model":"llama-3.1-8b-instant","messages":text_only2,"max_tokens":1024})
+                    if r2.status_code==200:
+                        return r2.json()["choices"][0]["message"]["content"]
+                else:
+                    logger.error(f"Groq {r.status_code}: {r.text[:200]}")
         except Exception as e: logger.error(f"Groq error: {e}")
 
     # Пробуем Cerebras
@@ -939,7 +953,7 @@ async def _call_ai(messages:list, file_context:dict=None) -> str:
             async with httpx.AsyncClient(timeout=30) as c:
                 r=await c.post("https://api.cerebras.ai/v1/chat/completions",
                     headers={"Authorization":f"Bearer {CEREBRAS_KEY}","Content-Type":"application/json"},
-                    json={"model":"llama-3.3-70b","messages":text_only,"max_tokens":1024})
+                    json={"model":"llama3.1-70b","messages":text_only,"max_tokens":1024})
                 if r.status_code==200:
                     return r.json()["choices"][0]["message"]["content"]
         except Exception as e: logger.error(f"Cerebras error: {e}")
