@@ -107,6 +107,53 @@ def _run_migrations():
             )
         """)
 
+        # Music tables
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS music_rooms (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(64) NOT NULL,
+                description TEXT,
+                created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                current_track_id INTEGER,
+                current_started_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                current_started_at TIMESTAMP,
+                is_playing BOOLEAN DEFAULT FALSE,
+                paused_at_sec FLOAT DEFAULT 0
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS music_room_members (
+                id SERIAL PRIMARY KEY,
+                room_id INTEGER NOT NULL REFERENCES music_rooms(id) ON DELETE CASCADE,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                joined_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(room_id, user_id)
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS music_tracks (
+                id SERIAL PRIMARY KEY,
+                room_id INTEGER REFERENCES music_rooms(id) ON DELETE CASCADE,
+                title VARCHAR(128) NOT NULL,
+                artist VARCHAR(128),
+                duration_sec FLOAT,
+                yadisk_key TEXT NOT NULL,
+                cover_url TEXT,
+                uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                is_shared BOOLEAN DEFAULT FALSE
+            )
+        """))
+        conn.execute(text("""
+            DO $$ BEGIN
+                ALTER TABLE music_rooms ADD CONSTRAINT fk_current_track
+                    FOREIGN KEY (current_track_id) REFERENCES music_tracks(id) ON DELETE SET NULL;
+            EXCEPTION WHEN duplicate_object THEN NULL; END $$
+        """))
+        conn.commit()
+        logger.info("Music tables OK")
+
         logger.info("Migrations OK")
     finally:
         conn.close()

@@ -119,3 +119,55 @@ class Call(Base):
     started_at   = Column(DateTime, default=datetime.utcnow, nullable=False)
     ended_at     = Column(DateTime, nullable=True)
     duration_sec = Column(Integer, nullable=True)
+
+
+class MusicRoom(Base):
+    """Музыкальная комната"""
+    __tablename__ = "music_rooms"
+    id          = Column(Integer, primary_key=True, index=True)
+    name        = Column(String(64), nullable=False)
+    description = Column(Text, nullable=True)
+    created_by  = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+    # Текущее воспроизведение
+    current_track_id   = Column(Integer, ForeignKey("music_tracks.id", ondelete="SET NULL"), nullable=True)
+    current_started_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    current_started_at = Column(DateTime, nullable=True)  # когда началось воспроизведение
+    is_playing         = Column(Boolean, default=False, nullable=False)
+    paused_at_sec      = Column(Float, default=0, nullable=False)
+
+    members = relationship("MusicRoomMember", back_populates="room", cascade="all, delete-orphan")
+    tracks  = relationship("MusicTrack", back_populates="room", cascade="all, delete-orphan",
+                           foreign_keys="MusicTrack.room_id")
+
+
+class MusicRoomMember(Base):
+    """Участник музыкальной комнаты"""
+    __tablename__ = "music_room_members"
+    id       = Column(Integer, primary_key=True, index=True)
+    room_id  = Column(Integer, ForeignKey("music_rooms.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id  = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    joined_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    room = relationship("MusicRoom", back_populates="members")
+    user = relationship("User", lazy="joined")
+
+    __table_args__ = (UniqueConstraint("room_id", "user_id"),)
+
+
+class MusicTrack(Base):
+    """Музыкальный трек"""
+    __tablename__ = "music_tracks"
+    id          = Column(Integer, primary_key=True, index=True)
+    room_id     = Column(Integer, ForeignKey("music_rooms.id", ondelete="CASCADE"), nullable=True, index=True)
+    title       = Column(String(128), nullable=False)
+    artist      = Column(String(128), nullable=True)
+    duration_sec = Column(Float, nullable=True)
+    yadisk_key  = Column(Text, nullable=False)  # public_key на Яндекс Диске
+    cover_url   = Column(Text, nullable=True)   # обложка
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+    is_shared   = Column(Boolean, default=False, nullable=False)  # из общей папки /music
+
+    room = relationship("MusicRoom", back_populates="tracks", foreign_keys=[room_id])
+    uploader = relationship("User", foreign_keys=[uploaded_by], lazy="joined")

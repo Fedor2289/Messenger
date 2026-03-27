@@ -1288,3 +1288,263 @@ async def _status(db,uid,online):
     ls=u.last_seen.isoformat() if u and getattr(u,"last_seen",None) else None
     await manager.broadcast(list(contacts),{"type":"user_status","user_id":uid,
                                              "is_online":online,"last_seen":ls})
+
+
+# ══════════════════════════════════════════════════════════════
+# MUSIC ROOMS API
+# ══════════════════════════════════════════════════════════════
+
+from models import MusicRoom, MusicRoomMember, MusicTrack
+import time as _time_mod
+
+MUSIC_FOLDER = "music"
+
+def music_track_dict(t, db=None):
+    if not t: return None
+    return {
+        "id": t.id, "title": t.title, "artist": t.artist,
+        "duration_sec": t.duration_sec, "yadisk_key": t.yadisk_key,
+        "cover_url": t.cover_url, "is_shared": t.is_shared,
+        "room_id": t.room_id,
+        "uploaded_by": t.uploaded_by,
+        "uploader_name": (t.uploader.display_name or t.uploader.username) if t.uploader else None,
+    }
+
+def music_room_dict(r, db, viewer_id=None):
+    members = db.query(MusicRoomMember).filter_by(room_id=r.id).all()
+    members_data = [{"id": m.user.id, "username": m.user.username,
+                     "display_name": getattr(m.user,"display_name",None),
+                     "avatar_img": getattr(m.user,"avatar_img",None),
+                     "avatar_color": m.user.avatar_color or "#5288c1",
+                     "is_online": manager.is_online(m.user.id)} for m in members]
+    track = db.get(MusicTrack, r.current_track_id) if r.current_track_id else None
+    # Calculate current playback position
+    position = 0.0
+    if r.is_playing and r.current_started_at:
+        elapsed = (_time_mod.time() - r.current_started_at.timestamp())
+        position = (r.paused_at_sec or 0) + elapsed
+    elif not r.is_playing:
+        position = r.paused_at_sec or 0
+    return {
+        "id": r.id, "name": r.name, "description": r.description,
+        "created_by": r.created_by, "member_count": len(members),
+        "members": members_data,
+        "current_track": music_track_dict(track),
+        "current_started_by": r.current_started_by,
+        "is_playing": r.is_playing,
+        "position": round(position, 1),
+    }
+
+@app.get("/api/music/rooms")
+async def list_music_rooms(token: str = Query(...), db: Session = Depends(get_db)):
+    auth(token, db)
+    rooms = db.query(MusicRoom).order_by(MusicRoom.created_at.desc()).all()
+    return [music_room_dict(r, db) for r in rooms]
+
+@app.post("/api/music/rooms")
+async def create_music_room(body: dict, token: str = Query(...), db: Session = Depends(get_db)):
+    me = auth(token, db)
+    name = (body.get("name") or "").strip()[:64]
+    if not name: raise HTTPException(400, "Название обязательно")
+    room = MusicRoom(name=name, description=body.get("description"), created_by=me.id)
+    db.add(room); db.commit(); db.refresh(room)
+    # Auto-join creator
+    db.add(MusicRoomMember(room_id=room.id, user_id=me.id))
+    db.commit()
+    rd = music_room_dict(room, db)
+    await manager.broadcast([u.id for u in db.query(models.User).all()],
+                             {"type": "music_room_created", "room": rd})
+    return rd
+
+@app.post("/api/music/rooms/{rid}/join")
+async def join_music_room(rid: int, token: str = Query(...), db: Session = Depends(get_db)):
+    me = auth(token, db)
+    room = db.get(MusicRoom, rid)
+    if not room: raise HTTPException(404, "Комната не найдена")
+    existing = db.query(MusicRoomMember).filter_by(room_id=rid, user_id=me.id).first()
+    if not existing:
+        db.add(MusicRoomMember(room_id=rid, user_id=me.id))
+        db.commit()
+    rd = music_room_dict(room, db)
+    # Notify all members
+    member_ids = [m.user_id for m in db.query(MusicRoomMember).filter_by(room_id=rid).all()]
+    await manager.broadcast(member_ids, {"type": "music_room_updated", "room": rd})
+    return rd
+
+@app.post("/api/music/rooms/{rid}/leave")
+async def leave_music_room(rid: int, token: str = Query(...), db: Session = Depends(get_db)):
+    me = auth(token, db)
+    db.query(MusicRoomMember).filter_by(room_id=rid, user_id=me.id).delete()
+    db.commit()
+    room = db.get(MusicRoom, rid)
+    if room:
+        rd = music_room_dict(room, db)
+        member_ids = [m.user_id for m in db.query(MusicRoomMember).filter_by(room_id=rid).all()]
+        await manager.broadcast(member_ids, {"type": "music_room_updated", "room": rd})
+    return {"ok": True}
+
+@app.get("/api/music/rooms/{rid}/tracks")
+async def list_room_tracks(rid: int, token: str = Query(...), db: Session = Depends(get_db)):
+    auth(token, db)
+    tracks = db.query(MusicTrack).filter_by(room_id=rid).order_by(MusicTrack.created_at.desc()).all()
+    shared = db.query(MusicTrack).filter_by(is_shared=True, room_id=None).order_by(MusicTrack.created_at.desc()).all()
+    return {"tracks": [music_track_dict(t) for t in tracks],
+            "shared": [music_track_dict(t) for t in shared]}
+
+@app.post("/api/music/rooms/{rid}/upload")
+async def upload_music_track(rid: int, token: str = Query(...),
+                              file: UploadFile = File(...),
+                              title: str = Form(""),
+                              artist: str = Form(""),
+                              db: Session = Depends(get_db)):
+    me = auth(token, db)
+    room = db.get(MusicRoom, rid)
+    if not room: raise HTTPException(404, "Комната не найдена")
+    raw = await file.read()
+    if len(raw) > 20 * 1024 * 1024: raise HTTPException(400, "Файл не более 20 МБ")
+    fname = file.filename or "track.mp3"
+    mime = file.content_type or "audio/mpeg"
+    if not mime.startswith("audio/"): raise HTTPException(400, "Только аудио файлы")
+    # Check duration: will be set by client
+    yadisk_uri = await yadisk_upload(raw, fname, mime)
+    if not yadisk_uri: raise HTTPException(503, "Ошибка загрузки на Яндекс Диск")
+    track_title = title.strip() or fname.rsplit(".", 1)[0][:128]
+    track = MusicTrack(
+        room_id=rid, title=track_title, artist=artist.strip()[:128] or None,
+        yadisk_key=yadisk_uri, uploaded_by=me.id, is_shared=False
+    )
+    db.add(track); db.commit(); db.refresh(track)
+    td = music_track_dict(track)
+    member_ids = [m.user_id for m in db.query(MusicRoomMember).filter_by(room_id=rid).all()]
+    await manager.broadcast(member_ids, {"type": "music_track_added", "room_id": rid, "track": td})
+    return td
+
+@app.post("/api/music/rooms/{rid}/play")
+async def music_play(rid: int, body: dict, token: str = Query(...), db: Session = Depends(get_db)):
+    me = auth(token, db)
+    room = db.get(MusicRoom, rid)
+    if not room: raise HTTPException(404)
+    track_id = body.get("track_id")
+    position = float(body.get("position", 0))
+    track = db.get(MusicTrack, track_id)
+    if not track: raise HTTPException(404, "Трек не найден")
+    # Check: only the person who started current track can change it
+    if room.is_playing and room.current_started_by and room.current_started_by != me.id:
+        if room.current_track_id != track_id:  # changing to different track
+            raise HTTPException(403, "Сейчас играет чужой трек")
+    room.current_track_id = track_id
+    room.current_started_by = me.id
+    room.current_started_at = datetime.utcnow()
+    room.paused_at_sec = position
+    room.is_playing = True
+    db.commit()
+    rd = music_room_dict(room, db)
+    member_ids = [m.user_id for m in db.query(MusicRoomMember).filter_by(room_id=rid).all()]
+    await manager.broadcast(member_ids, {"type": "music_play", "room": rd,
+                                          "track": music_track_dict(track),
+                                          "position": position, "started_by": me.id})
+    return rd
+
+@app.post("/api/music/rooms/{rid}/pause")
+async def music_pause(rid: int, body: dict, token: str = Query(...), db: Session = Depends(get_db)):
+    me = auth(token, db)
+    room = db.get(MusicRoom, rid)
+    if not room: raise HTTPException(404)
+    if room.current_started_by != me.id: raise HTTPException(403, "Только владелец трека может ставить на паузу")
+    position = float(body.get("position", 0))
+    room.is_playing = False
+    room.paused_at_sec = position
+    db.commit()
+    member_ids = [m.user_id for m in db.query(MusicRoomMember).filter_by(room_id=rid).all()]
+    await manager.broadcast(member_ids, {"type": "music_pause", "room_id": rid, "position": position})
+    return {"ok": True}
+
+@app.post("/api/music/rooms/{rid}/seek")
+async def music_seek(rid: int, body: dict, token: str = Query(...), db: Session = Depends(get_db)):
+    me = auth(token, db)
+    room = db.get(MusicRoom, rid)
+    if not room: raise HTTPException(404)
+    if room.current_started_by != me.id: raise HTTPException(403)
+    position = float(body.get("position", 0))
+    room.paused_at_sec = position
+    if room.is_playing:
+        room.current_started_at = datetime.utcnow()
+    db.commit()
+    member_ids = [m.user_id for m in db.query(MusicRoomMember).filter_by(room_id=rid).all()]
+    await manager.broadcast(member_ids, {"type": "music_seek", "room_id": rid, "position": position})
+    return {"ok": True}
+
+@app.post("/api/music/rooms/{rid}/stop")
+async def music_stop(rid: int, token: str = Query(...), db: Session = Depends(get_db)):
+    me = auth(token, db)
+    room = db.get(MusicRoom, rid)
+    if not room: raise HTTPException(404)
+    if room.current_started_by != me.id: raise HTTPException(403)
+    room.is_playing = False
+    room.current_track_id = None
+    room.current_started_by = None
+    room.paused_at_sec = 0
+    db.commit()
+    member_ids = [m.user_id for m in db.query(MusicRoomMember).filter_by(room_id=rid).all()]
+    await manager.broadcast(member_ids, {"type": "music_stop", "room_id": rid})
+    return {"ok": True}
+
+@app.get("/api/music/track/{track_id}/stream")
+async def stream_music_track(track_id: int, token: str = Query(...), db: Session = Depends(get_db)):
+    """Стрим аудио трека"""
+    auth(token, db)
+    track = db.get(MusicTrack, track_id)
+    if not track: raise HTTPException(404)
+    download_url = await yadisk_get_download_url(track.yadisk_key)
+    if not download_url: raise HTTPException(503, "Не удалось получить файл")
+    async def _stream():
+        async with httpx.AsyncClient(timeout=300, follow_redirects=True) as c:
+            async with c.stream("GET", download_url) as r:
+                async for chunk in r.aiter_bytes(65536):
+                    yield chunk
+    from fastapi.responses import StreamingResponse as _SR
+    return _SR(_stream(), media_type="audio/mpeg",
+                headers={"Cache-Control": "public, max-age=3600",
+                         "Accept-Ranges": "none",
+                         "Access-Control-Allow-Origin": "*"})
+
+@app.delete("/api/music/rooms/{rid}")
+async def delete_music_room(rid: int, token: str = Query(...), db: Session = Depends(get_db)):
+    me = auth(token, db)
+    room = db.get(MusicRoom, rid)
+    if not room: raise HTTPException(404)
+    if room.created_by != me.id: raise HTTPException(403)
+    db.delete(room); db.commit()
+    await manager.broadcast([u.id for u in db.query(models.User).all()],
+                             {"type": "music_room_deleted", "room_id": rid})
+    return {"ok": True}
+
+async def scan_yadisk_music():
+    """Сканирует папку /music на Яндекс Диске и добавляет треки в shared"""
+    if not YADISK_TOKEN: return
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            r = await c.get("https://cloud-api.yandex.net/v1/disk/resources",
+                headers={"Authorization": f"OAuth {YADISK_TOKEN}"},
+                params={"path": f"/{MUSIC_FOLDER}", "fields": "_embedded.items.name,_embedded.items.public_key,_embedded.items.mime_type,_embedded.items.size"})
+            if r.status_code != 200: return
+            items = r.json().get("_embedded", {}).get("items", [])
+            db = SessionLocal()
+            try:
+                for item in items:
+                    mime = item.get("mime_type","")
+                    if not mime.startswith("audio/"): continue
+                    pk = item.get("public_key")
+                    if not pk: continue
+                    # Publish if not published
+                    exists = db.query(MusicTrack).filter_by(yadisk_key=f"yadisk:{pk}").first()
+                    if not exists:
+                        name = item.get("name","track")
+                        title = name.rsplit(".",1)[0]
+                        track = MusicTrack(title=title, yadisk_key=f"yadisk:{pk}", is_shared=True)
+                        db.add(track)
+                db.commit()
+            finally:
+                db.close()
+    except Exception as e:
+        logger.error(f"YaDisk music scan: {e}")
