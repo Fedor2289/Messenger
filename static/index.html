@@ -450,8 +450,6 @@ textarea.fi{resize:none}
   display:flex;align-items:center;justify-content:center;padding:0}
 .lb-close:hover{opacity:1;background:rgba(0,0,0,.75)}
 
-/* ── UPLOAD PULSE ── */
-@keyframes uploadPulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* ── TOAST ── */
 #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
   z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;min-width:200px}
@@ -509,6 +507,48 @@ textarea.fi{resize:none}
 /* ── ADMIN TAG ── */
 .admin-tag{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;
   font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px}
+
+/* ── MUSIC ── */
+.mroom-item{padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px;transition:background var(--tr)}
+.mroom-item:hover,.mroom-item.active{background:var(--bg2)}
+.mroom-av{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6c63ff,#e040fb);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+.mroom-info{flex:1;min-width:0}
+.mroom-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mroom-sub{font-size:12px;color:var(--t3);margin-top:2px}
+.mp-cover-wrap{padding:20px 28px 16px}
+.mp-cover{width:100%;max-width:260px;aspect-ratio:1/1;background:linear-gradient(135deg,#6c63ff,#e040fb);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;overflow:hidden;margin:0 auto}
+.mp-cover img{width:100%;height:100%;object-fit:cover}
+.mp-cover.playing{animation:mpSpin 8s linear infinite}
+@keyframes mpSpin{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+.mp-info{padding:0 24px 12px;text-align:center}
+.mp-title{font-size:19px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-artist{font-size:13px;color:var(--t3);margin-top:4px}
+.mp-progress{padding:0 24px 8px}
+.mp-bar-wrap{height:5px;background:rgba(255,255,255,.12);border-radius:3px;cursor:pointer;position:relative}
+.mp-bar-fill{height:5px;background:linear-gradient(90deg,#6c63ff,#e040fb);border-radius:3px;transition:width .1s linear}
+.mp-bar-thumb{width:13px;height:13px;background:#fff;border-radius:50%;position:absolute;top:50%;transform:translateY(-50%);margin-left:-6px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.mp-times{display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-top:6px}
+.mp-controls{display:flex;align-items:center;justify-content:center;gap:20px;padding:8px 24px 16px}
+.mp-btn{background:none;border:none;color:var(--t1);cursor:pointer;opacity:.7;transition:all .15s;display:flex;align-items:center;justify-content:center;padding:4px}
+.mp-btn:hover{opacity:1;transform:scale(1.08)}
+.mp-btn.play{width:62px;height:62px;background:linear-gradient(135deg,#6c63ff,#e040fb);border-radius:50%;opacity:1;box-shadow:0 4px 20px rgba(108,99,255,.45)}
+.mp-btn.play:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(108,99,255,.6)}
+.mp-vol-row{display:flex;align-items:center;gap:10px;padding:0 24px 14px}
+.mp-vol-bar{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px;cursor:pointer}
+.mp-vol-fill{height:4px;background:var(--t2);border-radius:2px;pointer-events:none}
+.mp-tracklist{flex:1;overflow-y:auto;padding:4px 12px 20px}
+.mp-track-item{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:10px;cursor:pointer;transition:background .15s}
+.mp-track-item:hover{background:rgba(255,255,255,.05)}
+.mp-track-item.active{background:rgba(108,99,255,.18)}
+.mp-track-num{width:24px;text-align:center;font-size:12px;color:var(--t3);flex-shrink:0}
+.mp-track-info{flex:1;min-width:0}
+.mp-track-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-track-artist{font-size:11px;color:var(--t3)}
+.mp-track-dur{font-size:11px;color:var(--t3);flex-shrink:0;min-width:36px;text-align:right}
+#music-view{display:none;flex-direction:column;height:100%;background:var(--bg1);overflow:hidden}
+.mp-header{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.mp-body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+/* end music */
 
 .spinner{width:24px;height:24px;border:2.5px solid rgba(255,255,255,.15);
   border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;margin:auto;
@@ -610,8 +650,8 @@ textarea.fi{resize:none}
       <input class="si" id="sb-srch" type="text" placeholder="Поиск..." oninput="filterSB(this.value)">
     </div></div>
     <div class="sb-tabs">
-      <button class="sb-tab on" onclick="swSBTab('chats')">Чаты</button>
-      <button class="sb-tab" onclick="swSBTab('channels')">Каналы</button>
+      <button class="sb-tab on" onclick="swSBTab('chats')" title="Чаты">Чаты</button>
+      </div><button class="sb-tab" id="music-tab-btn" onclick="swSBTab('music')" title="Музыка 🎵" style="font-size:16px">🎵</button><button class="sb-tab" onclick="swSBTab('channels')">Каналы</button>
     </div>
     <div class="chatlist" id="chatlist">
       <div class="no-chats"><div class="ico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTcgMjFWMTlDMTcgMTcuOTM5MSAxNi41Nzg2IDE2LjkyMTcgMTUuODI4NCAxNi4xNzE2QzE1LjA3ODMgMTUuNDIxNCAxNC4wNjA5IDE1IDEzIDE1SDVDMy45MzkxMyAxNSAyLjkyMTcyIDE1LjQyMTQgMi4xNzE1NyAxNi4xNzE2QzEuNDIxNDMgMTYuOTIxNyAxIDE3LjkzOTEgMSAxOVYyMSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iOSIgY3k9IjciIHI9IjQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJNMjMgMjFWMTlDMjIuOTk5MyAxOC4xMTM3IDIyLjcwNDQgMTcuMjUyOCAyMi4xNjE0IDE2LjU1MjNDMjEuNjE4NCAxNS44NTE5IDIwLjg1ODEgMTUuMzUxNiAyMCAxNS4xMyIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE2IDMuMTNDMTYuODYwNCAzLjM1MDMxIDE3LjYyMyAzLjg1MDcxIDE4LjE2NzYgNC41NTIzMkMxOC43MTIyIDUuMjUzOTIgMTkuMDA3OCA2LjExNjgzIDE5LjAwNzggNy4wMDVDMTkuMDA3OCA3Ljg5MzE3IDE4LjcxMjIgOC43NTYwOCAxOC4xNjc2IDkuNDU3NjlDMTcuNjIzIDEwLjE1OTMgMTYuODYwNCAxMC42NTk3IDE2IDEwLjg4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="40" height="40" style="display:inline-block;vertical-align:middle" alt=""></div>Нажмите для начала</div>
@@ -880,6 +920,9 @@ textarea.fi{resize:none}
         <input class="si" style="width:100%" id="ch-srch" type="text"
                placeholder="Поиск каналов..." oninput="srchChannels(this.value)"></div>
       <div id="channels-list"><div class="spinner"></div></div>
+
+<!-- MUSIC ROOMS LIST -->
+<div id="music-rooms-list" style="display:none;flex-direction:column;height:100%;overflow-y:auto"></div>
     </div>
   </div>
 </div>
@@ -1095,7 +1138,76 @@ textarea.fi{resize:none}
   </div>
 </div>
 
+<!-- MUSIC VIEW (replaces chat area when music tab active) -->
+<div id="music-view">
+  <div class="mp-header">
+    <button class="ib" onclick="closeMusicRoom()" id="mp-back-btn" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div style="flex:1;font-weight:600;font-size:15px" id="mp-room-title">Музыка</div>
+    <button class="ib" onclick="openCreateMusicRoom()" id="mp-create-btn" title="Создать комнату"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+    <button class="ib" onclick="leaveMusicRoom()" id="mp-leave-btn" style="display:none" title="Выйти из комнаты"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+  </div>
+  <!-- Rooms list -->
+  <div id="mp-rooms-view" style="flex:1;overflow-y:auto">
+    <div style="padding:12px 16px 6px;font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Музыкальные комнаты</div>
+    <div id="mp-rooms-container"></div>
+  </div>
+  <!-- Player view -->
+  <div id="mp-player-view" style="display:none;flex-direction:column;height:100%;overflow:hidden">
+    <div class="mp-body">
+      <div class="mp-cover-wrap">
+        <div class="mp-cover" id="mp-cover-el">🎵</div>
+      </div>
+      <div class="mp-info">
+        <div class="mp-title" id="mp-track-title">Выберите трек</div>
+        <div class="mp-artist" id="mp-track-artist"></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:4px" id="mp-playing-by"></div>
+      </div>
+      <div class="mp-progress">
+        <div class="mp-bar-wrap" id="mp-bar-wrap" onclick="mpSeekClick(event)">
+          <div class="mp-bar-fill" id="mp-bar-fill" style="width:0%"></div>
+          <div class="mp-bar-thumb" id="mp-bar-thumb" style="left:0%"></div>
+        </div>
+        <div class="mp-times"><span id="mp-cur">0:00</span><span id="mp-dur">0:00</span></div>
+      </div>
+      <div class="mp-controls">
+        <button class="mp-btn" onclick="mpStop()" id="mp-stop-btn" style="display:none" title="Стоп"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+        <button class="mp-btn play" onclick="mpTogglePlay()" id="mp-play-btn"><svg id="mp-play-icon" width="26" height="26" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21"/></svg></button>
+        <button class="mp-btn" onclick="trigMusicUpload()" title="Добавить трек"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+      </div>
+      <div class="mp-vol-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+        <div class="mp-vol-bar" id="mp-vol-bar" onclick="mpVolClick(event)"><div class="mp-vol-fill" id="mp-vol-fill" style="width:100%"></div></div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      </div>
+      <!-- Members online -->
+      <div style="padding:4px 16px 8px;display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <div id="mp-members-row" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+      </div>
+      <!-- Track list -->
+      <div style="padding:8px 16px 4px;font-size:12px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Треки комнаты</div>
+      <div class="mp-tracklist" id="mp-tracklist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Create music room -->
+<div class="ov" id="m-music-room" onclick="closeOv(event,'m-music-room')">
+  <div class="modal" style="max-width:360px">
+    <div class="mhd"><span class="mt">Новая комната</span><button class="ib" onclick="closeM('m-music-room')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <input class="fi" id="mr-name" placeholder="Название комнаты *" maxlength="64" style="font-size:16px">
+      <textarea class="fi" id="mr-desc" placeholder="Описание (необязательно)" rows="2" style="resize:none;font-size:16px"></textarea>
+      <button class="btn btn-p btn-full" onclick="doCreateMusicRoom()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input for music upload -->
+<input type="file" id="music-file-input" accept="audio/*" style="display:none" onchange="handleMusicUpload(this)">
+
 <!-- LIGHTBOX -->
+
 <div class="lb" id="lb" onclick="closeLBClick(event)">
   <button class="lb-close" onclick="closeLB()" style="font-size:28px;line-height:1"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8bGluZSB4MT0iMTgiIHkxPSI2IiB4Mj0iNiIgeTI9IjE4IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxsaW5lIHgxPSI2IiB5MT0iNiIgeDI9IjE4IiB5Mj0iMTgiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPg==" width="28" height="28" style="display:inline-block;vertical-align:middle" alt=""></button>
   <img id="lb-img" src="" alt="" style="display:none">
@@ -1105,11 +1217,11 @@ textarea.fi{resize:none}
 <div id="toasts"></div>
 <div id="upload-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:600;padding:0">
   <div style="background:var(--bg2);border-top:1px solid var(--brd);padding:8px 16px;display:flex;align-items:center;gap:10px">
-    <svg id="upload-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     <div style="flex:1">
       <div style="font-size:12px;color:var(--t2);margin-bottom:4px" id="upload-label">Загрузка...</div>
       <div style="background:var(--bg3);border-radius:4px;height:4px;overflow:hidden">
-        <div id="upload-progress" style="height:4px;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px;width:0%;transition:width .3s ease"></div>
+        <div id="upload-progress" style="height:4px;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px;width:0%;transition:width .2s ease"></div>
       </div>
     </div>
     <span id="upload-pct" style="font-size:12px;color:var(--acc);font-weight:600;min-width:36px;text-align:right">0%</span>
@@ -1152,6 +1264,10 @@ const S={
   // Voice recording
   mediaRec:null, recStream:null, recChunks:[], recTimer:null, recSec:0, recWI:null,
   vnRec:null, vnStream:null, vnChunks:[], vnTimer:null, vnSec:0,
+  // Music
+  musicRoom:null, musicTracks:[], musicShared:[], musicVol:1.0,
+  musicAudio:null, musicPos:0, musicDur:0, musicIsOwner:false,
+  musicPosInt:null,
   // Attach UI
   attachOpen:false, stickersOpen:false, gifOpen:false,
   // WebRTC
@@ -1223,60 +1339,11 @@ function showUploadBar(label){
   document.getElementById('upload-pct').textContent='0%';
 }
 function setUploadProgress(pct){
-  const bar=document.getElementById('upload-progress');
-  const pctEl=document.getElementById('upload-pct');
-  if(pct>=100){
-    // Переключаем на анимированную полоску "сохранение в облаке"
-    bar.style.width='100%';
-    bar.style.transition='none';
-    bar.style.animation='uploadPulse 1s ease-in-out infinite';
-    pctEl.textContent='☁️';
-    document.getElementById('upload-label').textContent='Сохранение в облаке...';
-  } else {
-    bar.style.animation='';
-    bar.style.transition='width .3s ease';
-    bar.style.width=pct+'%';
-    pctEl.textContent=pct+'%';
-  }
+  document.getElementById('upload-progress').style.width=pct+'%';
+  document.getElementById('upload-pct').textContent=pct+'%';
 }
 function hideUploadBar(){
-  clearInterval(_cloudProgressInt);
   document.getElementById('upload-bar').style.display='none';
-  const bar=document.getElementById('upload-progress');
-  if(bar){bar.style.animation='';bar.style.transition='none';bar.style.width='0%';}
-  const pct=document.getElementById('upload-pct');
-  if(pct)pct.textContent='0%';
-}
-let _cloudProgressInt=null;
-let _cloudPct=0;
-function startCloudProgress(){
-  // Анимируем 0→95% за ~5 сек пока сервер заливает на Яндекс.Диск
-  _cloudPct=0;
-  clearInterval(_cloudProgressInt);
-  const bar=document.getElementById('upload-progress');
-  const pctEl=document.getElementById('upload-pct');
-  if(bar){bar.style.animation='';bar.style.transition='width .4s ease';bar.style.width='0%';}
-  document.getElementById('upload-label').textContent='Сохранение в облаке...';
-  _cloudProgressInt=setInterval(()=>{
-    _cloudPct=Math.min(95,_cloudPct+Math.random()*1.2+0.3);
-    if(bar) bar.style.width=_cloudPct+'%';
-    if(pctEl) pctEl.textContent=Math.round(_cloudPct)+'%';
-  },300);
-}
-function finishCloudProgress(msg){
-  clearInterval(_cloudProgressInt);
-  const bar=document.getElementById('upload-progress');
-  const pctEl=document.getElementById('upload-pct');
-  if(bar){bar.style.transition='width .15s ease';bar.style.width='100%';}
-  if(pctEl)pctEl.textContent='100%';
-  // Сразу показываем сообщение в чате
-  if(msg&&S.roomId===msg.room_id){
-    // Показываем только если ещё не добавлено через WS
-    if(!document.querySelector(`.mw[data-id="${msg.id}"]`)){
-      appendMsg(msg);scrollBot();
-    }
-  }
-  setTimeout(()=>hideUploadBar(),400);
 }
 function esc(s){const d=document.createElement('div');d.appendChild(document.createTextNode(s||''));return d.innerHTML;}
 function fmtTime(iso){const s=iso&&!iso.endsWith('Z')&&!iso.includes('+')?(iso+'Z'):iso;return new Date(s).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'});}
@@ -1468,10 +1535,7 @@ function handleWS(d){
 }
 
 function onWsMsg(msg){
-  if(msg.msg_type==='ringtone') return;
-  // Убираем индикатор печатания ИИ и временные сообщения
-  document.getElementById('ai-typing')?.remove();
-  document.querySelectorAll('.mw[data-id^="tmp-"]').forEach(el=>el.remove());
+  if(msg.msg_type==='ringtone') return;  // системное сообщение, скрываем
   const room=S.rooms.find(r=>r.id===msg.room_id);
   if(room){room.last_message=msg;if(S.roomId!==msg.room_id)room.unread_count=(room.unread_count||0)+1;S.rooms=[room,...S.rooms.filter(r=>r.id!==msg.room_id)];}
   else{loadRooms();return;}
@@ -1547,9 +1611,27 @@ function swSBTab(t){
   const alreadyOn=(S.sbTab===t);
   S.sbTab=t;
   document.querySelectorAll('.sb-tab').forEach((el,i)=>el.classList.toggle('on',
-    (i===0&&t==='chats')||(i===1&&t==='channels')));
-  renderRooms();
-  if(t==='channels'&&alreadyOn) openChannelsExplore();
+    (i===0&&t==='chats')||(i===1&&t==='music')||(i===2&&t==='channels')));
+  if(t==='music'){
+    document.getElementById('chatlist').style.display='none';
+    document.getElementById('channels-list').style.display='none';
+    document.getElementById('music-rooms-list').style.display='flex';
+    document.getElementById('music-rooms-list').style.flexDirection='column';
+    document.getElementById('music-view').style.display='flex';
+    document.getElementById('music-view').style.flexDirection='column';
+    // Hide chat area
+    document.getElementById('active-chat').style.display='none';
+    document.getElementById('welcome').classList.add('hidden');
+    loadMusicRooms();
+  } else {
+    document.getElementById('music-rooms-list').style.display='none';
+    document.getElementById('music-view').style.display='none';
+    document.getElementById('chatlist').style.display='';
+    document.getElementById('channels-list').style.display=(t==='channels')?'':'none';
+    if(t==='chats'){renderRooms();}
+    if(t==='channels'&&alreadyOn) openChannelsExplore();
+    if(t!=='music'&&S.musicRoom){stopMusicAudio();}
+  }
 }
 
 let _rrTO=null;
@@ -1625,6 +1707,14 @@ function roomNameOf(r){
 /* ════ OPEN ROOM ══════════════════════════════════ */
 async function openRoom(rid){
   closeAttach();cancelReply();cancelEdit();
+  // Switch back from music tab if needed
+  if(S.sbTab==='music'){
+    document.getElementById('music-view').style.display='none';
+    document.getElementById('music-rooms-list').style.display='none';
+    document.getElementById('chatlist').style.display='';
+    S.sbTab='chats';
+    document.querySelectorAll('.sb-tab').forEach((el,i)=>el.classList.toggle('on',i===0));
+  }
   S.roomId=rid;
   const room=S.rooms.find(r=>r.id===rid);
   if(room){room.unread_count=0;}
@@ -1979,6 +2069,7 @@ async function sendMsg(){
     ta.value='';ta.style.height='auto';
     try{
       const aiBody={message:txt,room_id:S.roomId};
+      // Если есть прикреплённый файл для ИИ
       if(S._aiPendingFile){
         aiBody.file_data=S._aiPendingFile.data;
         aiBody.file_name=S._aiPendingFile.name;
@@ -1986,34 +2077,8 @@ async function sendMsg(){
         S._aiPendingFile=null;
         _clearAiFilePreview();
       }
-      // Показываем сообщение пользователя сразу (оптимистично)
-      const fakeUserMsg={
-        id:'tmp-'+Date.now(),msg_type:'text',content:txt,
-        sender_id:S.me.id,room_id:S.roomId,
-        created_at:new Date().toISOString(),
-        is_read:true,is_deleted:false,is_pinned:false,
-        edited_at:null,reply_to:null,reactions:{},
-        sender:{id:S.me.id,username:S.me.username,display_name:S.me.display_name,
-          avatar_img:S.me.avatar_img,avatar_color:S.me.avatar_color||'#5288c1',is_online:true}
-      };
-      appendMsg(fakeUserMsg);scrollBot();
-      // Показываем индикатор печатания ИИ
-      const typingEl=document.createElement('div');
-      typingEl.id='ai-typing';typingEl.className='mw in first';
-      typingEl.innerHTML='<div style="width:32px;flex-shrink:0"></div><div class="bbl ai-bbl" style="padding:10px 14px"><div class="tyd"><span></span><span></span><span></span></div></div>';
-      document.getElementById('msgs').appendChild(typingEl);
-      scrollBot();
       await http('POST','/api/ai/message',aiBody);
-      // Убираем индикатор - реальные сообщения придут через WS
-      document.getElementById('ai-typing')?.remove();
-      // Перезагружаем сообщения если WS не обновил
-      setTimeout(async()=>{
-        if(document.querySelector('.mw[data-id="tmp-'+fakeUserMsg.id.split('-').pop()+'"]')){
-          const data=await http('GET',`/api/rooms/${S.roomId}/messages`).catch(()=>null);
-          if(data)renderMsgs(data.messages,false);
-        }
-      },800);
-    }catch(e){document.getElementById('ai-typing')?.remove();toast(e.message,'err');}
+    }catch(e){toast(e.message,'err');}
     return;
   }
 
@@ -2122,11 +2187,11 @@ async function handleFile(input){
   const _fn=file.name;
   showUploadBar(_fn.length>30?_fn.slice(0,27)+'...':_fn);
   try{
-    const res=await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
-      if(pct<100) setUploadProgress(pct);
-      else startCloudProgress();
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      setUploadProgress(pct);
+      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
     });
-    finishCloudProgress(res);cancelReply();
+    hideUploadBar();cancelReply();
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
@@ -2159,11 +2224,11 @@ async function sendVoice(){
   const fd=new FormData();fd.append('file',new File([blob],`voice.${ext}`,{type:mime}));
   showUploadBar('Отправка голосового...');
   try{
-    const res=await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
-      if(pct<100) setUploadProgress(pct);
-      else startCloudProgress();
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      setUploadProgress(pct);
+      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
     });
-    finishCloudProgress(res);
+    hideUploadBar();
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
@@ -2236,11 +2301,11 @@ async function sendVidNote(){
   const fd=new FormData();fd.append('file',new File([blob],`vidnote.${ext}`,{type:mime}));
   showUploadBar('Отправка видеосообщения...');
   try{
-    const res=await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
-      if(pct<100) setUploadProgress(pct);
-      else startCloudProgress();
+    await httpForm(`/api/rooms/${S.roomId}/upload`,fd,pct=>{
+      setUploadProgress(pct);
+      if(pct>=100) document.getElementById('upload-label').textContent='Сохранение в облаке...';
     });
-    finishCloudProgress(res);
+    hideUploadBar();
   }catch(e){hideUploadBar();toast(e.message,'err');}
 }
 
@@ -3132,6 +3197,327 @@ function onWsRoomUpd(room){
   renderRooms();
   if(S.roomId===room.id) updChatHead();
 }
+
+/* ════════════════════════════════════════════════════
+   MUSIC ROOMS
+═════════════════════════════════════════════════════*/
+async function loadMusicRooms(){
+  const c=document.getElementById('mp-rooms-container');
+  c.innerHTML='<div class="spinner" style="margin:20px auto"></div>';
+  try{
+    const rooms=await http('GET','/api/music/rooms');
+    renderMusicRooms(rooms);
+  }catch(e){c.innerHTML=`<div style="text-align:center;color:var(--t3);padding:20px">${esc(e.message)}</div>`;}
+}
+
+function renderMusicRooms(rooms){
+  const c=document.getElementById('mp-rooms-container');
+  if(!rooms.length){
+    c.innerHTML='<div style="text-align:center;color:var(--t3);padding:30px 20px;font-size:13px">Нет комнат.<br>Создайте первую!</div>';
+    return;
+  }
+  c.innerHTML=rooms.map(r=>{
+    const playing=r.is_playing&&r.current_track?`🎵 ${esc(r.current_track.title)}`:'Ничего не играет';
+    const active=S.musicRoom&&S.musicRoom.id===r.id?'active':'';
+    return `<div class="mroom-item ${active}" onclick="openMusicRoom(${r.id})">
+      <div class="mroom-av">🎵</div>
+      <div class="mroom-info">
+        <div class="mroom-name">${esc(r.name)}</div>
+        <div class="mroom-sub">${playing} · ${r.member_count} чел.</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openMusicRoom(rid){
+  try{
+    const room=await http('POST',`/api/music/rooms/${rid}/join`);
+    S.musicRoom=room;
+    showMusicPlayer(room);
+  }catch(e){toast(e.message,'err');}
+}
+
+function showMusicPlayer(room){
+  document.getElementById('mp-rooms-view').style.display='none';
+  document.getElementById('mp-player-view').style.display='flex';
+  document.getElementById('mp-player-view').style.flexDirection='column';
+  document.getElementById('mp-player-view').style.height='100%';
+  document.getElementById('mp-room-title').textContent=room.name;
+  document.getElementById('mp-back-btn').style.display='';
+  document.getElementById('mp-create-btn').style.display='none';
+  document.getElementById('mp-leave-btn').style.display='';
+  updateMusicPlayerUI(room);
+  loadMusicTracks(room.id);
+  // If something is playing - sync
+  if(room.is_playing&&room.current_track){
+    startMusicAudio(room.current_track, room.position||0);
+  }
+}
+
+function updateMusicPlayerUI(room){
+  S.musicRoom=room;
+  const track=room.current_track;
+  document.getElementById('mp-track-title').textContent=track?track.title:'Выберите трек';
+  document.getElementById('mp-track-artist').textContent=track&&track.artist?track.artist:'';
+  // Playing by
+  const byEl=document.getElementById('mp-playing-by');
+  if(room.is_playing&&room.current_started_by){
+    const who=room.members.find(m=>m.id===room.current_started_by);
+    byEl.textContent=who?`Включил: ${who.display_name||who.username}`:'';
+  } else byEl.textContent='';
+  // Owner check
+  S.musicIsOwner=(room.current_started_by===S.me.id)||!room.current_track;
+  document.getElementById('mp-stop-btn').style.display=(S.musicIsOwner&&room.current_track)?'':'none';
+  // Cover glow when playing
+  const cv=document.getElementById('mp-cover-el');
+  if(room.is_playing) cv.style.filter='drop-shadow(0 0 20px rgba(108,99,255,.6))';
+  else cv.style.filter='';
+  if(track&&track.cover_url){
+    cv.innerHTML=`<img src="${esc(track.cover_url)}" alt="">`;
+  } else {
+    cv.innerHTML='🎵';
+  }
+  // Members
+  const mr=document.getElementById('mp-members-row');
+  mr.innerHTML=room.members.map(m=>{
+    const av=m.avatar_img&&m.avatar_img.length>10
+      ?`background-color:transparent;background-image:url(${m.avatar_img});background-size:cover`
+      :`background-color:${m.avatar_color||'#5288c1'}`;
+    const txt=m.avatar_img?'':(m.display_name||m.username||'?')[0].toUpperCase();
+    return `<div class="av mp-member-av" style="${av}" title="${esc(m.display_name||m.username)}">${txt}</div>`;
+  }).join('');
+  // Play button icon
+  const icon=document.getElementById('mp-play-icon');
+  if(room.is_playing&&S.musicIsOwner){
+    icon.innerHTML='<rect x="6" y="4" width="4" height="16" rx="1" fill="white"/><rect x="14" y="4" width="4" height="16" rx="1" fill="white"/>';
+  } else {
+    icon.innerHTML='<polygon points="5 3 19 12 5 21" fill="white"/>';
+  }
+}
+
+async function loadMusicTracks(rid){
+  try{
+    const data=await http('GET',`/api/music/rooms/${rid}/tracks`);
+    S.musicTracks=data.tracks;
+    S.musicShared=data.shared;
+    renderTrackList();
+  }catch(e){console.error(e);}
+}
+
+function renderTrackList(){
+  const c=document.getElementById('mp-tracklist');
+  const allTracks=[...S.musicTracks,...S.musicShared];
+  if(!allTracks.length){
+    c.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:13px">Нет треков.<br>Нажмите ⬆ чтобы загрузить.</div>';
+    return;
+  }
+  const curId=S.musicRoom?.current_track?.id;
+  c.innerHTML=allTracks.map((t,i)=>{
+    const active=t.id===curId?'active':'';
+    const dur=t.duration_sec?fmtDur(Math.round(t.duration_sec)):'—';
+    const shared=t.is_shared?'<span style="font-size:10px;color:var(--t3)">общий</span>':'';
+    return `<div class="mp-track-item ${active}" onclick="playMusicTrack(${t.id})">
+      <div class="mp-track-num">${t.id===curId&&S.musicRoom.is_playing?'▶':i+1}</div>
+      <div class="mp-track-info">
+        <div class="mp-track-title">${esc(t.title)}</div>
+        <div class="mp-track-artist">${t.artist?esc(t.artist):''}${shared}</div>
+      </div>
+      <div class="mp-track-dur">${dur}</div>
+    </div>`;
+  }).join('');
+}
+
+async function playMusicTrack(trackId){
+  if(!S.musicRoom) return;
+  const rid=S.musicRoom.id;
+  try{
+    await http('POST',`/api/music/rooms/${rid}/play`,{track_id:trackId,position:0});
+  }catch(e){toast(e.message,'err');}
+}
+
+async function mpTogglePlay(){
+  if(!S.musicRoom) return;
+  const rid=S.musicRoom.id;
+  if(!S.musicRoom.current_track){
+    // No track - show track list (already showing)
+    toast('Выберите трек из списка');
+    return;
+  }
+  if(S.musicIsOwner){
+    if(S.musicRoom.is_playing){
+      // Pause
+      const pos=S.musicAudio?S.musicAudio.currentTime:S.musicRoom.position||0;
+      try{await http('POST',`/api/music/rooms/${rid}/pause`,{position:pos});}catch(e){toast(e.message,'err');}
+    } else {
+      // Resume
+      const pos=S.musicAudio?S.musicAudio.currentTime:S.musicRoom.position||0;
+      try{await http('POST',`/api/music/rooms/${rid}/play`,{track_id:S.musicRoom.current_track.id,position:pos});}catch(e){toast(e.message,'err');}
+    }
+  }
+}
+
+async function mpStop(){
+  if(!S.musicRoom) return;
+  try{await http('POST',`/api/music/rooms/${S.musicRoom.id}/stop`);}catch(e){toast(e.message,'err');}
+}
+
+function mpSeekClick(e){
+  if(!S.musicRoom||!S.musicIsOwner||!S.musicRoom.current_track) return;
+  const wrap=document.getElementById('mp-bar-wrap');
+  const rect=wrap.getBoundingClientRect();
+  const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  const pos=pct*(S.musicDur||0);
+  if(S.musicAudio) S.musicAudio.currentTime=pos;
+  http('POST',`/api/music/rooms/${S.musicRoom.id}/seek`,{position:pos}).catch(()=>{});
+}
+
+function mpVolClick(e){
+  const bar=document.getElementById('mp-vol-bar');
+  const rect=bar.getBoundingClientRect();
+  S.musicVol=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  document.getElementById('mp-vol-fill').style.width=(S.musicVol*100)+'%';
+  if(S.musicAudio) S.musicAudio.volume=S.musicVol;
+}
+
+// Audio management
+function startMusicAudio(track, position){
+  stopMusicAudio();
+  const url=`${API}/api/music/track/${track.id}/stream?token=${S.token}`;
+  S.musicAudio=new Audio(url);
+  S.musicAudio.volume=S.musicVol;
+  S.musicAudio.currentTime=position||0;
+  S.musicAudio.play().catch(()=>{});
+  S.musicAudio.onloadedmetadata=()=>{
+    S.musicDur=S.musicAudio.duration;
+    document.getElementById('mp-dur').textContent=fmtDur(Math.round(S.musicDur));
+  };
+  S.musicAudio.onended=()=>{
+    if(S.musicIsOwner) mpStop();
+  };
+  clearInterval(S.musicPosInt);
+  S.musicPosInt=setInterval(updateMusicProgress,500);
+}
+
+function stopMusicAudio(){
+  if(S.musicAudio){S.musicAudio.pause();S.musicAudio.src='';S.musicAudio=null;}
+  clearInterval(S.musicPosInt);
+  document.getElementById('mp-bar-fill').style.width='0%';
+  document.getElementById('mp-bar-thumb').style.left='0%';
+  document.getElementById('mp-cur').textContent='0:00';
+}
+
+function updateMusicProgress(){
+  if(!S.musicAudio||!S.musicDur) return;
+  const cur=S.musicAudio.currentTime;
+  const pct=(cur/S.musicDur)*100;
+  document.getElementById('mp-bar-fill').style.width=pct+'%';
+  document.getElementById('mp-bar-thumb').style.left=pct+'%';
+  document.getElementById('mp-cur').textContent=fmtDur(Math.round(cur));
+}
+
+function closeMusicRoom(){
+  document.getElementById('mp-rooms-view').style.display='';
+  document.getElementById('mp-player-view').style.display='none';
+  document.getElementById('mp-room-title').textContent='Музыка';
+  document.getElementById('mp-back-btn').style.display='none';
+  document.getElementById('mp-create-btn').style.display='';
+  document.getElementById('mp-leave-btn').style.display='none';
+  loadMusicRooms();
+}
+
+async function leaveMusicRoom(){
+  if(!S.musicRoom) return;
+  try{
+    await http('POST',`/api/music/rooms/${S.musicRoom.id}/leave`);
+    stopMusicAudio();
+    S.musicRoom=null;
+    closeMusicRoom();
+  }catch(e){toast(e.message,'err');}
+}
+
+function openCreateMusicRoom(){openM('m-music-room');}
+async function doCreateMusicRoom(){
+  const name=document.getElementById('mr-name').value.trim();
+  if(!name){toast('Введите название','err');return;}
+  const desc=document.getElementById('mr-desc').value.trim();
+  try{
+    const room=await http('POST','/api/music/rooms',{name,description:desc||null});
+    closeM('m-music-room');
+    document.getElementById('mr-name').value='';
+    document.getElementById('mr-desc').value='';
+    S.musicRoom=room;
+    showMusicPlayer(room);
+  }catch(e){toast(e.message,'err');}
+}
+
+function trigMusicUpload(){document.getElementById('music-file-input').click();}
+async function handleMusicUpload(input){
+  if(!input.files.length||!S.musicRoom) return;
+  const file=input.files[0];
+  if(file.size>20*1024*1024){toast('Максимум 20 МБ','err');return;}
+  // Get title from filename
+  const defaultTitle=file.name.replace(/\.[^.]+$/,'');
+  const title=prompt('Название трека:',defaultTitle)||defaultTitle;
+  const artist=prompt('Исполнитель (необязательно):','')||'';
+  const fd=new FormData();
+  fd.append('file',file);
+  fd.append('title',title);
+  fd.append('artist',artist);
+  showUploadBar(`🎵 ${title.length>30?title.slice(0,27)+'...':title}`);
+  try{
+    await httpForm(`/api/music/rooms/${S.musicRoom.id}/upload`,fd,pct=>{
+      if(pct<100) setUploadProgress(pct);
+      else startCloudProgress();
+    });
+    hideUploadBar();
+  }catch(e){hideUploadBar();toast(e.message,'err');}
+  input.value='';
+}
+
+// WS event handlers for music
+function onMusicRoomCreated(room){if(S.sbTab==='music') loadMusicRooms();}
+function onMusicRoomDeleted(rid){
+  if(S.musicRoom&&S.musicRoom.id===rid){
+    stopMusicAudio();S.musicRoom=null;closeMusicRoom();toast('Комната удалена');
+  }
+  if(S.sbTab==='music') loadMusicRooms();
+}
+function onMusicRoomUpdated(room){
+  if(S.sbTab==='music') loadMusicRooms();
+  if(S.musicRoom&&S.musicRoom.id===room.id) updateMusicPlayerUI(room);
+}
+function onMusicPlay(d){
+  if(!S.musicRoom||S.musicRoom.id!==d.room.id) return;
+  updateMusicPlayerUI(d.room);
+  startMusicAudio(d.track, d.position||0);
+  renderTrackList();
+}
+function onMusicPause(d){
+  if(!S.musicRoom||S.musicRoom.id!==d.room_id) return;
+  if(S.musicAudio){S.musicAudio.pause();S.musicAudio.currentTime=d.position||0;}
+  const icon=document.getElementById('mp-play-icon');
+  icon.innerHTML='<polygon points="5 3 19 12 5 21" fill="white"/>';
+  if(S.musicRoom) S.musicRoom.is_playing=false;
+}
+function onMusicSeek(d){
+  if(!S.musicRoom||S.musicRoom.id!==d.room_id) return;
+  if(S.musicAudio) S.musicAudio.currentTime=d.position||0;
+}
+function onMusicStop(d){
+  if(!S.musicRoom||S.musicRoom.id!==d.room_id) return;
+  stopMusicAudio();
+  S.musicRoom.is_playing=false;
+  S.musicRoom.current_track=null;
+  S.musicRoom.current_started_by=null;
+  updateMusicPlayerUI(S.musicRoom);
+  renderTrackList();
+}
+function onMusicTrackAdded(d){
+  if(!S.musicRoom||S.musicRoom.id!==d.room_id) return;
+  loadMusicTracks(d.room_id);
+  toast(`Добавлен трек: ${d.track.title}`);
+}
+
 </script>
 </body>
 </html>
