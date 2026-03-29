@@ -130,7 +130,7 @@ class MusicRoom(Base):
     created_by  = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
     # Текущее воспроизведение
-    current_track_id   = Column(Integer, ForeignKey("music_tracks.id", ondelete="SET NULL"), nullable=True)
+    current_track_id   = Column(Integer, nullable=True)  # FK handled in migration
     current_started_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     current_started_at = Column(DateTime, nullable=True)  # когда началось воспроизведение
     is_playing         = Column(Boolean, default=False, nullable=False)
@@ -138,7 +138,8 @@ class MusicRoom(Base):
 
     members = relationship("MusicRoomMember", back_populates="room", cascade="all, delete-orphan")
     tracks  = relationship("MusicTrack", back_populates="room", cascade="all, delete-orphan",
-                           foreign_keys="MusicTrack.room_id")
+                           primaryjoin="MusicTrack.room_id==MusicRoom.id",
+                           foreign_keys="[MusicTrack.room_id]")
 
 
 class MusicRoomMember(Base):
@@ -169,5 +170,7 @@ class MusicTrack(Base):
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
     is_shared   = Column(Boolean, default=False, nullable=False)  # из общей папки /music
 
-    room = relationship("MusicRoom", back_populates="tracks", foreign_keys=[room_id])
+    room = relationship("MusicRoom", back_populates="tracks",
+                        primaryjoin="MusicTrack.room_id==MusicRoom.id",
+                        foreign_keys="[MusicTrack.room_id]")
     uploader = relationship("User", foreign_keys=[uploaded_by], lazy="joined")

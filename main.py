@@ -125,6 +125,7 @@ async def on_startup():
     # Запускаем миграции в фоне — НЕ ждём, сервер стартует мгновенно
     asyncio.get_event_loop().run_in_executor(None, _do_startup)
     _log.info("Server ready, migrations running in background")
+    asyncio.ensure_future(scan_yadisk_music())
 
 def _do_startup():
     import logging, time
