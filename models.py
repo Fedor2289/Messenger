@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Index, UniqueConstraint, BigInteger, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Index, UniqueConstraint, BigInteger, Enum, Float
 from sqlalchemy.orm import relationship
 from database import Base
 
