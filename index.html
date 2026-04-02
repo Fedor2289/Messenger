@@ -545,7 +545,7 @@ textarea.fi{resize:none}
 .mp-track-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mp-track-artist{font-size:11px;color:var(--t3)}
 .mp-track-dur{font-size:11px;color:var(--t3);flex-shrink:0;min-width:36px;text-align:right}
-#music-view{display:none;flex-direction:column;height:100%;background:var(--bg1);overflow:hidden}
+#music-view{display:none;flex-direction:column;flex:1;min-height:0;background:var(--bg1);overflow:hidden}
 .mp-header{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;flex-shrink:0}
 .mp-body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
 /* end music */
@@ -657,6 +657,7 @@ textarea.fi{resize:none}
     <div class="chatlist" id="chatlist">
       <div class="no-chats"><div class="ico"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTcgMjFWMTlDMTcgMTcuOTM5MSAxNi41Nzg2IDE2LjkyMTcgMTUuODI4NCAxNi4xNzE2QzE1LjA3ODMgMTUuNDIxNCAxNC4wNjA5IDE1IDEzIDE1SDVDMy45MzkxMyAxNSAyLjkyMTcyIDE1LjQyMTQgMi4xNzE1NyAxNi4xNzE2QzEuNDIxNDMgMTYuOTIxNyAxIDE3LjkzOTEgMSAxOVYyMSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iOSIgY3k9IjciIHI9IjQiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBkPSJNMjMgMjFWMTlDMjIuOTk5MyAxOC4xMTM3IDIyLjcwNDQgMTcuMjUyOCAyMi4xNjE0IDE2LjU1MjNDMjEuNjE4NCAxNS44NTE5IDIwLjg1ODEgMTUuMzUxNiAyMCAxNS4xMyIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE2IDMuMTNDMTYuODYwNCAzLjM1MDMxIDE3LjYyMyAzLjg1MDcxIDE4LjE2NzYgNC41NTIzMkMxOC43MTIyIDUuMjUzOTIgMTkuMDA3OCA2LjExNjgzIDE5LjAwNzggNy4wMDVDMTkuMDA3OCA3Ljg5MzE3IDE4LjcxMjIgOC43NTYwOCAxOC4xNjc2IDkuNDU3NjlDMTcuNjIzIDEwLjE1OTMgMTYuODYwNCAxMC42NTk3IDE2IDEwLjg4IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" width="40" height="40" style="display:inline-block;vertical-align:middle" alt=""></div>Нажмите для начала</div>
     </div>
+    <div id="music-rooms-list" style="display:none;flex-direction:column;flex:1;overflow-y:auto"></div>
     <div class="sbfoot">
       <button class="ib" title="Выйти" onclick="logout()"><svg width="18" height="18" style="display:inline-block;vertical-align:middle;flex-shrink:0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -829,6 +830,58 @@ textarea.fi{resize:none}
 </svg></button>
       </div>
     </div>
+    <!-- MUSIC VIEW -->
+    <div id="music-view">
+      <div class="mp-header">
+        <button class="ib" onclick="closeMusicRoom()" id="mp-back-btn" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div style="flex:1;font-weight:600;font-size:15px" id="mp-room-title">Музыка</div>
+        <button class="ib" onclick="openCreateMusicRoom()" id="mp-create-btn" title="Создать комнату"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <button class="ib" onclick="leaveMusicRoom()" id="mp-leave-btn" style="display:none" title="Выйти из комнаты"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+      </div>
+      <!-- Rooms list -->
+      <div id="mp-rooms-view" style="flex:1;overflow-y:auto">
+        <div style="padding:12px 16px 6px;font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Музыкальные комнаты</div>
+        <div id="mp-rooms-container"></div>
+      </div>
+      <!-- Player view -->
+      <div id="mp-player-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+        <div class="mp-body">
+          <div class="mp-cover-wrap">
+            <div class="mp-cover" id="mp-cover-el">🎵</div>
+          </div>
+          <div class="mp-info">
+            <div class="mp-title" id="mp-track-title">Выберите трек</div>
+            <div class="mp-artist" id="mp-track-artist"></div>
+            <div style="font-size:11px;color:var(--t3);margin-top:4px" id="mp-playing-by"></div>
+          </div>
+          <div class="mp-progress">
+            <div class="mp-bar-wrap" id="mp-bar-wrap" onclick="mpSeekClick(event)">
+              <div class="mp-bar-fill" id="mp-bar-fill" style="width:0%"></div>
+              <div class="mp-bar-thumb" id="mp-bar-thumb" style="left:0%"></div>
+            </div>
+            <div class="mp-times"><span id="mp-cur">0:00</span><span id="mp-dur">0:00</span></div>
+          </div>
+          <div class="mp-controls">
+            <button class="mp-btn" onclick="mpStop()" id="mp-stop-btn" style="display:none" title="Стоп"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+            <button class="mp-btn play" onclick="mpTogglePlay()" id="mp-play-btn"><svg id="mp-play-icon" width="26" height="26" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21"/></svg></button>
+            <button class="mp-btn" onclick="trigMusicUpload()" title="Добавить трек"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+          </div>
+          <div class="mp-vol-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+            <div class="mp-vol-bar" id="mp-vol-bar" onclick="mpVolClick(event)"><div class="mp-vol-fill" id="mp-vol-fill" style="width:100%"></div></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </div>
+          <!-- Members online -->
+          <div style="padding:4px 16px 8px;display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <div id="mp-members-row" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+          </div>
+          <!-- Track list -->
+          <div style="padding:8px 16px 4px;font-size:12px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Треки комнаты</div>
+          <div class="mp-tracklist" id="mp-tracklist"></div>
+        </div>
+      </div>
+    </div>
   </div>
  </div>
 </div>
@@ -921,9 +974,6 @@ textarea.fi{resize:none}
         <input class="si" style="width:100%" id="ch-srch" type="text"
                placeholder="Поиск каналов..." oninput="srchChannels(this.value)"></div>
       <div id="channels-list"><div class="spinner"></div></div>
-
-<!-- MUSIC ROOMS LIST -->
-<div id="music-rooms-list" style="display:none;flex-direction:column;height:100%;overflow-y:auto"></div>
     </div>
   </div>
 </div>
@@ -1136,59 +1186,6 @@ textarea.fi{resize:none}
   <polygon points="23 7 16 12 23 17 23 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></button>
-  </div>
-</div>
-
-<!-- MUSIC VIEW (replaces chat area when music tab active) -->
-<div id="music-view">
-  <div class="mp-header">
-    <button class="ib" onclick="closeMusicRoom()" id="mp-back-btn" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <div style="flex:1;font-weight:600;font-size:15px" id="mp-room-title">Музыка</div>
-    <button class="ib" onclick="openCreateMusicRoom()" id="mp-create-btn" title="Создать комнату"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-    <button class="ib" onclick="leaveMusicRoom()" id="mp-leave-btn" style="display:none" title="Выйти из комнаты"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
-  </div>
-  <!-- Rooms list -->
-  <div id="mp-rooms-view" style="flex:1;overflow-y:auto">
-    <div style="padding:12px 16px 6px;font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Музыкальные комнаты</div>
-    <div id="mp-rooms-container"></div>
-  </div>
-  <!-- Player view -->
-  <div id="mp-player-view" style="display:none;flex-direction:column;height:100%;overflow:hidden">
-    <div class="mp-body">
-      <div class="mp-cover-wrap">
-        <div class="mp-cover" id="mp-cover-el">🎵</div>
-      </div>
-      <div class="mp-info">
-        <div class="mp-title" id="mp-track-title">Выберите трек</div>
-        <div class="mp-artist" id="mp-track-artist"></div>
-        <div style="font-size:11px;color:var(--t3);margin-top:4px" id="mp-playing-by"></div>
-      </div>
-      <div class="mp-progress">
-        <div class="mp-bar-wrap" id="mp-bar-wrap" onclick="mpSeekClick(event)">
-          <div class="mp-bar-fill" id="mp-bar-fill" style="width:0%"></div>
-          <div class="mp-bar-thumb" id="mp-bar-thumb" style="left:0%"></div>
-        </div>
-        <div class="mp-times"><span id="mp-cur">0:00</span><span id="mp-dur">0:00</span></div>
-      </div>
-      <div class="mp-controls">
-        <button class="mp-btn" onclick="mpStop()" id="mp-stop-btn" style="display:none" title="Стоп"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
-        <button class="mp-btn play" onclick="mpTogglePlay()" id="mp-play-btn"><svg id="mp-play-icon" width="26" height="26" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21"/></svg></button>
-        <button class="mp-btn" onclick="trigMusicUpload()" title="Добавить трек"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-      </div>
-      <div class="mp-vol-row">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
-        <div class="mp-vol-bar" id="mp-vol-bar" onclick="mpVolClick(event)"><div class="mp-vol-fill" id="mp-vol-fill" style="width:100%"></div></div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-      </div>
-      <!-- Members online -->
-      <div style="padding:4px 16px 8px;display:flex;align-items:center;gap:6px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <div id="mp-members-row" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-      </div>
-      <!-- Track list -->
-      <div style="padding:8px 16px 4px;font-size:12px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Треки комнаты</div>
-      <div class="mp-tracklist" id="mp-tracklist"></div>
-    </div>
   </div>
 </div>
 
@@ -1615,22 +1612,23 @@ function swSBTab(t){
     (i===0&&t==='chats')||(i===1&&t==='music')||(i===2&&t==='channels')));
   if(t==='music'){
     document.getElementById('chatlist').style.display='none';
-    document.getElementById('channels-list').style.display='none';
     document.getElementById('music-rooms-list').style.display='flex';
     document.getElementById('music-rooms-list').style.flexDirection='column';
     document.getElementById('music-view').style.display='flex';
     document.getElementById('music-view').style.flexDirection='column';
-    // Hide chat area
     document.getElementById('active-chat').style.display='none';
     document.getElementById('welcome').classList.add('hidden');
     loadMusicRooms();
   } else {
+    // If leaving music tab on mobile, restore sidebar
+    document.getElementById('sb').classList.remove('slid');
+    document.getElementById('chat-area').classList.remove('vis');
+    if(S.musicRoom){stopMusicAudio();S.musicRoom=null;}
     document.getElementById('music-rooms-list').style.display='none';
     document.getElementById('music-view').style.display='none';
     document.getElementById('chatlist').style.display='';
     if(t==='chats'||t==='channels'){renderRooms();}
     if(t==='channels'&&alreadyOn) openChannelsExplore();
-    if(t!=='music'&&S.musicRoom){stopMusicAudio();}
   }
 }
 
@@ -3203,30 +3201,41 @@ function onWsRoomUpd(room){
 ═════════════════════════════════════════════════════*/
 async function loadMusicRooms(){
   const c=document.getElementById('mp-rooms-container');
-  c.innerHTML='<div class="spinner" style="margin:20px auto"></div>';
+  const spinner='<div class="spinner" style="margin:20px auto"></div>';
+  c.innerHTML=spinner;
+  const sbList=document.getElementById('music-rooms-list');
+  if(sbList) sbList.innerHTML=spinner;
   try{
     const rooms=await http('GET','/api/music/rooms');
     renderMusicRooms(rooms);
-  }catch(e){c.innerHTML=`<div style="text-align:center;color:var(--t3);padding:20px">${esc(e.message)}</div>`;}
+  }catch(e){
+    const err=`<div style="text-align:center;color:var(--t3);padding:20px">${esc(e.message)}</div>`;
+    c.innerHTML=err;
+    if(sbList) sbList.innerHTML=err;
+  }
 }
 
 function renderMusicRooms(rooms){
-  const c=document.getElementById('mp-rooms-container');
+  let html;
   if(!rooms.length){
-    c.innerHTML='<div style="text-align:center;color:var(--t3);padding:30px 20px;font-size:13px">Нет комнат.<br>Создайте первую!</div>';
-    return;
-  }
-  c.innerHTML=rooms.map(r=>{
-    const playing=r.is_playing&&r.current_track?`🎵 ${esc(r.current_track.title)}`:'Ничего не играет';
-    const active=S.musicRoom&&S.musicRoom.id===r.id?'active':'';
-    return `<div class="mroom-item ${active}" onclick="openMusicRoom(${r.id})">
+    html='<div style="text-align:center;color:var(--t3);padding:30px 20px;font-size:13px">Нет комнат.<br>Создайте первую!</div>';
+  } else {
+    html=rooms.map(r=>{
+      const playing=r.is_playing&&r.current_track?`🎵 ${esc(r.current_track.title)}`:'Ничего не играет';
+      const active=S.musicRoom&&S.musicRoom.id===r.id?'active':'';
+      return `<div class="mroom-item ${active}" onclick="openMusicRoom(${r.id})">
       <div class="mroom-av">🎵</div>
       <div class="mroom-info">
         <div class="mroom-name">${esc(r.name)}</div>
         <div class="mroom-sub">${playing} · ${r.member_count} чел.</div>
       </div>
     </div>`;
-  }).join('');
+    }).join('');
+  }
+  document.getElementById('mp-rooms-container').innerHTML=html;
+  // Also update sidebar list
+  const sbList=document.getElementById('music-rooms-list');
+  if(sbList) sbList.innerHTML=html;
 }
 
 async function openMusicRoom(rid){
@@ -3241,14 +3250,16 @@ function showMusicPlayer(room){
   document.getElementById('mp-rooms-view').style.display='none';
   document.getElementById('mp-player-view').style.display='flex';
   document.getElementById('mp-player-view').style.flexDirection='column';
-  document.getElementById('mp-player-view').style.height='100%';
+  document.getElementById('mp-player-view').style.flex='1';
   document.getElementById('mp-room-title').textContent=room.name;
   document.getElementById('mp-back-btn').style.display='';
   document.getElementById('mp-create-btn').style.display='none';
   document.getElementById('mp-leave-btn').style.display='';
+  // Show music view (on mobile: slide sidebar away, show chat-area)
+  document.getElementById('sb').classList.add('slid');
+  document.getElementById('chat-area').classList.add('vis');
   updateMusicPlayerUI(room);
   loadMusicTracks(room.id);
-  // If something is playing - sync
   if(room.is_playing&&room.current_track){
     startMusicAudio(room.current_track, room.position||0);
   }
@@ -3422,6 +3433,9 @@ function closeMusicRoom(){
   document.getElementById('mp-back-btn').style.display='none';
   document.getElementById('mp-create-btn').style.display='';
   document.getElementById('mp-leave-btn').style.display='none';
+  // On mobile: restore sidebar (rooms list is there), hide chat-area
+  document.getElementById('sb').classList.remove('slid');
+  document.getElementById('chat-area').classList.remove('vis');
   loadMusicRooms();
 }
 
